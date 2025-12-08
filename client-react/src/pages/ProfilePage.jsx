@@ -1,117 +1,71 @@
 // client-react/src/pages/ProfilePage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api, getBaseUrl } from '../api';
+import { api } from '../api';
 import PostCard from '../components/PostCard';
 import ProfileEdit from '../components/ProfileEdit';
 
-export default function ProfilePage({ me }) {
+export default function ProfilePage({ me, onUpdateMe }) {
   const { username } = useParams();
-  const [profile, setProfile] = useState(null);
+  const [profileUser, setProfileUser] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
 
-  useEffect(() => { fetchProfile(); }, [username]);
+  useEffect(() => { loadProfile(); }, [username]);
 
-  async function fetchProfile() {
-    setLoading(true);
+  async function loadProfile() {
     try {
-      const userOut = await api(`/api/users/${username}`);
-      setProfile(userOut.user);
-      const postsOut = await api(`/api/posts?author=${userOut.user._id}`);
-      setPosts(postsOut.posts || []);
-    } catch (e) { setError('Nie znaleziono użytkownika'); } finally { setLoading(false); }
+      const u = await api(`/api/users/${username}`);
+      setProfileUser(u);
+      const p = await api(`/api/posts?user=${u._id}`);
+      setPosts(p.posts || []);
+    } catch (e) { console.error(e); }
   }
 
-  async function handleSaveProfile(formData) {
-    setBusy(true);
-    try {
-      const updated = await api(`/api/users/${profile._id}`, { method: 'PUT', body: formData, auth: true });
-      setProfile(updated.user); setIsEditing(false);
-    } catch (e) { alert('Błąd zapisu'); } finally { setBusy(false); }
-  }
+  if (!profileUser) return <div className="container" style={{textAlign:'center', marginTop:50}}>Ładowanie...</div>;
 
-  function Avatar({ name, size = 100 }) {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: '50%',
-        background: 'linear-gradient(135deg, #21262d, #30363d)',
-        border: '3px solid #30363d', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.4, color: '#fff', fontWeight: 'bold', margin: '0 auto',
-        boxShadow: '0 8px 30px rgba(0,0,0,0.3)'
-      }}>
-        {(name || '?')[0].toUpperCase()}
-      </div>
-    );
-  }
-
-  if (loading) return <div className="container" style={{justifyContent:'center', alignItems:'center'}}>Ładowanie...</div>;
-  if (error) return <div className="container" style={{justifyContent:'center'}}>{error}</div>;
-  if (!profile) return null;
-
-  const isOwner = me && me._id === profile._id;
+  const isMe = me && me.username === profileUser.username;
 
   return (
     <div className="container">
-      {/* Kontener wyśrodkowany */}
       <div className="profile-layout">
         
-        {/* Karta Profilu - szerokość 600px */}
-        <section className="card profile-content" style={{textAlign: 'center', padding: '40px 20px'}}>
-          {!isEditing ? (
-            <>
-              <div style={{ marginBottom: 24 }}>
-                <Avatar name={profile.username} />
-              </div>
-              <h1 style={{ marginBottom: 5, fontSize:'2rem' }}>{profile.username}</h1>
-              <div style={{color:'#00e676', marginBottom: 20}}>{profile.email}</div>
-              
-              <div style={{ maxWidth: 400, margin: '0 auto 30px', color: '#e6edf3', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                {profile.bio || 'Brak opisu.'}
-              </div>
-
-              <div style={{ display: 'flex', gap: 30, justifyContent: 'center', borderTop: '1px solid #30363d', paddingTop: 20 }}>
-                <div>
-                  <strong style={{ fontSize: '1.5rem', display: 'block', color:'#fff' }}>{posts.length}</strong>
-                  <span className="muted">Postów</span>
-                </div>
-              </div>
-
-              {isOwner && (
-                <div style={{ marginTop: 25 }}>
-                  <button className="secondary" onClick={() => setIsEditing(true)}>Edytuj profil</button>
-                </div>
-              )}
-            </>
-          ) : (
-            <ProfileEdit user={profile} onCancel={() => setIsEditing(false)} onSave={handleSaveProfile} busy={busy} />
-          )}
-        </section>
-
-        {/* Lista Postów - szerokość 600px */}
         <div className="profile-content">
-          <h3 style={{ marginBottom: 20, borderLeft: '4px solid #00e676', paddingLeft: 12, color:'#fff' }}>
-            Posty użytkownika
-          </h3>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {posts.length > 0 ? posts.map(p => (
-              <PostCard 
-                key={p._id} 
-                post={p} 
-                currentUser={me} 
-                onUpdate={fetchProfile} 
-                onDelete={(id) => setPosts(prev => prev.filter(x => x._id !== id))} 
-              />
-            )) : (
-              <div className="card" style={{ textAlign: 'center', padding: 40, color: '#8b949e' }}>
-                Ten użytkownik nie dodał jeszcze żadnych postów.
-              </div>
-            )}
+          {/* Karta Profilu */}
+          <div className="box" style={{textAlign:'center', padding:40, position:'relative'}}>
+             <div className="user-avatar" style={{width:120, height:120, fontSize:'3rem', margin:'0 auto 20px', border:'4px solid #30363d'}}>
+               {profileUser.username[0].toUpperCase()}
+             </div>
+             <h1 style={{margin:0, fontSize:'2rem'}}>{profileUser.username}</h1>
+             <p className="muted" style={{marginTop:8, fontSize:'1rem'}}>{profileUser.bio || "Brak opisu biohackera."}</p>
+             
+             {isMe && (
+               <button className="secondary" onClick={()=>setIsEditing(true)} style={{marginTop:20, padding:'8px 20px', borderRadius:99}}>
+                 Edytuj profil
+               </button>
+             )}
           </div>
+
+          {/* Modal Edycji */}
+          {isEditing && (
+            <ProfileEdit 
+              user={profileUser} 
+              onClose={()=>setIsEditing(false)} 
+              onSave={async () => { await loadProfile(); if(onUpdateMe) onUpdateMe(); setIsEditing(false); }} 
+            />
+          )}
+
+          <h3 style={{marginTop:30, marginBottom:20, paddingLeft:10, borderLeft:'4px solid #00e676'}}>Wpisy użytkownika</h3>
+          
+          <div style={{display:'flex', flexDirection:'column', gap:20}}>
+            {posts.map(p => (
+               <div key={p._id} className="box" style={{padding:0, border:'none', background:'transparent', boxShadow:'none'}}>
+                  <PostCard post={p} currentUser={me} onUpdate={loadProfile} onDelete={loadProfile} />
+               </div>
+            ))}
+            {posts.length === 0 && <div className="muted">Brak wpisów.</div>}
+          </div>
+
         </div>
 
       </div>

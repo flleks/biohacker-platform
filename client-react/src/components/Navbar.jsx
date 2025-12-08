@@ -8,8 +8,8 @@ export default function Navbar({ user, onLogout, onOpenLogin }) {
   function Avatar({ name }) {
     return (
       <div style={{
-        width:34, height:34, borderRadius:'50%', background:'#21262d', 
-        border:'1px solid #30363d', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.85rem', fontWeight:'bold', color:'#fff'
+        width:38, height:38, borderRadius:'50%', background:'#21262d',
+        border:'1px solid #30363d', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.9rem', fontWeight:'bold', color:'#fff'
       }}>
         {(name || 'U')[0].toUpperCase()}
       </div>
@@ -21,23 +21,34 @@ export default function Navbar({ user, onLogout, onOpenLogin }) {
       <div className="navbar-content">
         <div className="brand" onClick={() => navigate('/')}>
           <div className="logo-icon"></div>
-          <span>Biohacker Platform</span>
+          <span style={{fontSize:'1.2rem', letterSpacing:'-0.5px'}}>Biohacker Platform</span>
         </div>
         
-        <div className="nav-right">
+        <div className="nav-right" style={{display:'flex', alignItems:'center', gap:15}}>
           {user ? (
             <>
               <div 
                 onClick={() => navigate(`/profile/${user.username}`)}
-                style={{display:'flex', alignItems:'center', gap:12, cursor:'pointer', padding:'6px 12px', borderRadius:20}}
+                style={{
+                    display:'flex', alignItems:'center', gap:10, cursor:'pointer', 
+                    padding:'4px 10px', borderRadius:20, transition:'0.2s',
+                    background: 'rgba(255,255,255,0.05)'
+                }}
               >
-                <div style={{textAlign:'right', lineHeight:1.2}}>
-                  <div style={{fontSize:'0.75rem', color:'#8b949e'}}>Witaj</div>
-                  <div style={{fontWeight:600, fontSize:'0.9rem', color:'#fff'}}>{user.username}</div>
+                <div style={{textAlign:'right', lineHeight:1.2, display:'none', sm:{display:'block'} }}>
+                  <div style={{fontWeight:600, fontSize:'0.9rem', color:'#e6edf3'}}>{user.username}</div>
                 </div>
                 <Avatar name={user.username} />
               </div>
-              <button className="secondary" onClick={onLogout} style={{padding:'8px 16px', borderRadius: 99}}>Wyloguj</button>
+
+              {/* Standardowy przycisk wylogowania bez dziwnych ikon */}
+              <button 
+                className="secondary"
+                onClick={onLogout} 
+                style={{ borderRadius: 99, fontSize: '0.9rem', padding: '8px 20px' }}
+              >
+                Wyloguj
+              </button>
             </>
           ) : (
             <>

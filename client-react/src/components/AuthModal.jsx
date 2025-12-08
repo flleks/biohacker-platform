@@ -2,115 +2,156 @@
 import React, { useState, useEffect } from 'react';
 import { api, setToken } from '../api';
 
-export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSuccess }) {
-  const [tab, setTab] = useState(initialTab);
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
-  const [busy, setBusy] = useState(false);
+export default function AuthModal({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) {
+  const [mode, setMode] = useState(initialMode); // 'login' lub 'register'
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => { 
-    setTab(initialTab); 
-    setError('');
-    setForm({ username: '', email: '', password: '' });
-  }, [initialTab, isOpen]);
+  // Resetowanie stanu przy otwarciu
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setError('');
+      setUsername('');
+      setEmail('');
+      setPassword('');
+    }
+  }, [isOpen, initialMode]);
 
   if (!isOpen) return null;
 
+  const isLogin = mode === 'login';
+
   async function handleSubmit(e) {
-    e.preventDefault(); // Zapobiega przeładowaniu formularza
-    setBusy(true); setError('');
-    
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+
     try {
-      const endpoint = tab === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const body = tab === 'login' 
-        ? { email: form.email, password: form.password }
-        : { username: form.username, email: form.email, password: form.password };
-      
-      const res = await api(endpoint, { method: 'POST', body });
-      setToken(res.token);
-      onSuccess(); 
-      onClose();
-    } catch (e) {
-      setError(e.message || 'Wystąpił błąd. Spróbuj ponownie.');
-    } finally { setBusy(false); }
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const body = isLogin ? { email, password } : { username, email, password };
+
+      // POPRAWKA: Przekazujemy metodę i body jako obiekt konfiguracyjny
+      const data = await api(endpoint, { method: 'POST', body });
+
+      if (data.token) {
+        setToken(data.token);
+        if (onLoginSuccess) onLoginSuccess();
+        onClose();
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Wystąpił błąd.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        
-        <div style={{textAlign: 'center', marginBottom: 20}}>
-          <h2 style={{fontSize: '1.5rem'}}>Witamy w Biohacker</h2>
-          <p className="muted">Zaloguj się, aby optymalizować swoje życie.</p>
+      <div 
+        className="modal" 
+        onClick={e => e.stopPropagation()}
+        style={{maxWidth: 400, padding: '40px 30px', position: 'relative'}}
+      >
+        {/* Przycisk zamknięcia X */}
+        <button 
+          className="secondary"
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: 15, right: 15, 
+            width: 32, height: 32, padding: 0, borderRadius: '50%',
+            background: 'transparent', border: 'none', color: '#8b949e', fontSize: '1.2rem'
+          }}
+        >
+          ✕
+        </button>
+
+        <div style={{textAlign: 'center', marginBottom: 25}}>
+           <div style={{fontSize: '3rem', marginBottom: 10}}>
+             {isLogin ? '🔐' : '🧬'}
+           </div>
+           <h2 style={{margin: 0, fontSize: '1.8rem'}}>
+             {isLogin ? 'Witaj ponownie' : 'Dołącz do nas'}
+           </h2>
+           <p className="muted" style={{marginTop: 8}}>
+             {isLogin ? 'Zaloguj się, aby kontynuować.' : 'Rozpocznij swoją przygodę z biohackingiem.'}
+           </p>
         </div>
 
-        <div className="tabs">
-          <div className={`tab ${tab==='login'?'active':''}`} onClick={()=>setTab('login')}>Logowanie</div>
-          <div className={`tab ${tab==='register'?'active':''}`} onClick={()=>setTab('register')}>Rejestracja</div>
-        </div>
+        {error && (
+          <div style={{
+            background: 'rgba(255, 60, 60, 0.1)', border: '1px solid rgba(255, 60, 60, 0.3)', 
+            color: '#ff7b72', padding: '10px 14px', borderRadius: 8, marginBottom: 20, fontSize: '0.9rem'
+          }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
-           {tab === 'register' && (
-             <label className="field">
-               <span>Nazwa użytkownika</span>
-               <input 
-                 autoFocus
-                 value={form.username} 
-                 onChange={e=>setForm({...form, username:e.target.value})} 
-                 placeholder="Twój nick"
-               />
-             </label>
-           )}
-           
-           <label className="field">
-             <span>Adres Email</span>
-             <input 
-               type="email"
-               value={form.email} 
-               onChange={e=>setForm({...form, email:e.target.value})} 
-               placeholder="jan@example.com"
-             />
-           </label>
-           
-           <label className="field">
-             <span>Hasło</span>
-             <input 
-               type="password" 
-               value={form.password} 
-               onChange={e=>setForm({...form, password:e.target.value})} 
-               placeholder="••••••••"
-             />
-           </label>
-           
-           {error && (
-             <div style={{
-               background: 'rgba(255, 107, 107, 0.1)', 
-               color: '#ff6b6b', 
-               padding: '10px', 
-               borderRadius: '8px', 
-               fontSize: '0.9rem',
-               marginBottom: '15px',
-               textAlign: 'center'
-             }}>
-               {error}
-             </div>
-           )}
-           
-           <div style={{marginTop: 20}}>
-             <button type="submit" disabled={busy} style={{width: '100%', padding: '14px'}}>
-               {busy ? 'Przetwarzam...' : (tab==='login' ? 'Zaloguj się' : 'Utwórz konto')}
-             </button>
-             
-             <button 
-               type="button" 
-               className="secondary" 
-               onClick={onClose} 
-               style={{width: '100%', marginTop: 10, background: 'transparent', border: 'none'}}
-             >
-               Anuluj
-             </button>
-           </div>
+          {!isLogin && (
+            <div className="field">
+              <span>Nazwa użytkownika</span>
+              <input 
+                type="text" 
+                placeholder="Np. BioHacker01"
+                value={username} onChange={e => setUsername(e.target.value)} 
+                required 
+                autoFocus={!isLogin}
+              />
+            </div>
+          )}
+
+          <div className="field">
+            <span>Email</span>
+            <input 
+              type="email" 
+              placeholder="twoj@email.com"
+              value={email} onChange={e => setEmail(e.target.value)} 
+              required 
+              autoFocus={isLogin}
+            />
+          </div>
+
+          <div className="field">
+            <span>Hasło</span>
+            <input 
+              type="password" 
+              placeholder="••••••••"
+              value={password} onChange={e => setPassword(e.target.value)} 
+              required 
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={busy} 
+            style={{width: '100%', marginTop: 10, padding: 12, fontSize: '1rem'}}
+          >
+            {busy ? 'Przetwarzanie...' : (isLogin ? 'Zaloguj się' : 'Utwórz konto')}
+          </button>
         </form>
+
+        <div style={{marginTop: 25, textAlign: 'center', fontSize: '0.9rem', color: '#8b949e'}}>
+          {isLogin ? 'Nie masz jeszcze konta?' : 'Masz już konto?'}
+          <br/>
+          <button 
+            type="button"
+            className="profile-edit-clean"
+            onClick={() => { setError(''); setMode(isLogin ? 'register' : 'login'); }}
+            style={{
+               color: '#00e676', fontWeight: 600, marginTop: 8, 
+               background: 'transparent', border: 'none', cursor: 'pointer',
+               textDecoration: 'underline', textUnderlineOffset: 4
+            }}
+          >
+            {isLogin ? 'Zarejestruj się tutaj' : 'Zaloguj się teraz'}
+          </button>
+        </div>
+
       </div>
     </div>
   );

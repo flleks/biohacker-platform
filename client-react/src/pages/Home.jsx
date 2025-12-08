@@ -73,32 +73,107 @@ export default function Home({ me }) {
     <div className="container">
       <div className="layout">
         
-        {/* 1. LEWA PUSTA (Centrowanie) */}
-        <div className="layout-spacer-left" style={{display:'block'}}></div>
+        {/* 1. LEWA KOLUMNA - PUSTY SPACER (Dla symetrii) */}
+        <div className="layout-left-spacer"></div>
 
-        {/* 2. FEED */}
+        {/* 2. GŁÓWNA KOLUMNA - ŚRODEK */}
         <div className="main-column">
-           {/* BOX WYSZUKIWARKI - Teraz input ma swoje tło */}
-           <section className="box" style={{padding: '20px', display:'flex', alignItems:'center', gap:15, borderRadius: 20}}>
-             <div style={{fontSize:'1.2rem', opacity: 0.7}}>🔍</div>
-             <div style={{flex:1}}>
-                <input 
-                  className="search-input-styled" // Ta klasa nadaje tło
-                  value={search} 
-                  onChange={e=>setSearch(e.target.value)} 
-                  placeholder="Szukaj wpisów lub #tagów..." 
-                />
+           
+           {/* KONTENER WYSZUKIWARKI */}
+           <section className="box" style={{padding: '25px'}}>
+             <h3 style={{margin:'0 0 15px 0', fontSize:'1rem', color:'#8b949e', textTransform:'uppercase', letterSpacing:1}}>
+               Wyszukaj
+             </h3>
+             <div style={{display:'flex', alignItems:'center', gap:10}}>
+                <div style={{flex:1}}>
+                  <input 
+                    className="search-input-styled" 
+                    value={search} 
+                    onChange={e=>setSearch(e.target.value)} 
+                    placeholder="Wpisz frazę lub #tag..." 
+                  />
+                </div>
+                {search && (
+                  <button className="secondary" onClick={()=>setSearch('')} style={{borderRadius:'50%', width:40, height:40, padding:0}}>
+                    ✕
+                  </button>
+                )}
              </div>
-             {search && <button className="secondary" onClick={()=>setSearch('')} style={{padding:'8px 14px', borderRadius:20, fontSize:'0.8rem'}}>✕</button>}
            </section>
 
-           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24, padding:'0 10px'}}>
-              <h2 style={{margin:0, fontSize:'1.5rem'}}>Feed</h2>
-              {me && <button onClick={()=>setComposerOpen(true)} style={{boxShadow:'0 4px 14px rgba(0,230,118,0.3)'}}>+ Nowy wpis</button>}
-           </div>
+           {/* KONTENER POSTÓW */}
+           <section className="box" style={{padding: '25px', background: '#161b22'}}> 
+              
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
+                  <h2 style={{margin:0, fontSize:'1.5rem'}}>Posty</h2>
+                  {me && (
+                    <button onClick={()=>setComposerOpen(true)} style={{boxShadow:'0 4px 14px rgba(0,230,118,0.3)'}}>
+                      + Dodaj
+                    </button>
+                  )}
+              </div>
 
-           {/* Modal Composera */}
-           {composerOpen && (
+              <div style={{display:'flex', flexDirection:'column', gap:20}}>
+                {filteredPosts.map(p => (
+                  <div key={p._id}>
+                     <PostCard post={p} currentUser={me} onUpdate={handlePostUpdate} onDelete={handlePostDelete} />
+                  </div>
+                ))}
+                
+                {filteredPosts.length === 0 && (
+                  <div style={{textAlign:'center', color:'#8b949e', padding:20}}>
+                      <div style={{fontSize:'2rem', marginBottom:10}}>🧪</div>
+                      <h3>Brak wyników</h3>
+                  </div>
+                )}
+              </div>
+           </section>
+        </div>
+
+        {/* 3. PRAWA KOLUMNA - SIDEBAR */}
+        <aside className="sidebar">
+          <div className="box" style={{textAlign:'center'}}>
+            {me ? (
+                <div>
+                  <div className="user-avatar" style={{width:80, height:80, margin:'0 auto 16px', fontSize:'2rem', boxShadow:'0 0 20px rgba(0,230,118,0.15)', border:'2px solid #30363d'}}>
+                    {me.username[0].toUpperCase()}
+                  </div>
+                  <strong style={{display:'block', marginBottom:4, fontSize:'1.2rem', color:'#fff'}}>{me.username}</strong>
+                  <div style={{color:'#00e676', fontSize:'0.9rem', marginBottom:20}}>{me.email}</div>
+                  
+                  <button className="secondary" style={{width:'100%', borderRadius:99}} onClick={() => navigate(`/profile/${me.username}`)}>
+                    Mój profil
+                  </button>
+                </div>
+            ) : (
+                <div style={{padding:'10px 0'}}>
+                  <h3 style={{fontSize:'1.1rem', color:'#fff'}}>Dołącz do nas</h3>
+                  <div className="muted" style={{marginBottom:16}}>Zaloguj się, aby śledzić, komentować i dzielić się wiedzą.</div>
+                </div>
+            )}
+          </div>
+
+          <div className="box">
+            <h3 style={{fontSize:'1rem', borderBottom:'1px solid #30363d', paddingBottom:10, marginBottom:15, textTransform:'uppercase', letterSpacing:1, color:'#8b949e'}}>
+              Popularne Tagi
+            </h3>
+            <div style={{display:'flex', flexWrap:'wrap', gap:8}}>
+              {trendingTags.length > 0 ? trendingTags.map(t => (
+                <button 
+                  key={t.tag} 
+                  className="button-chip" 
+                  onClick={()=>setSearch(t.tag)}
+                  style={{background: search === t.tag ? 'rgba(0,230,118,0.2)' : ''}}
+                >
+                  #{t.tag} <span style={{opacity:0.6, marginLeft:4}}>({t.count})</span>
+                </button>
+              )) : <span className="muted">Brak danych</span>}
+            </div>
+          </div>
+        </aside>
+
+        {/* Modal Composera */}
+        {composerOpen && (
              <div className="modal-backdrop" onClick={()=>setComposerOpen(false)}>
                <div className="modal" onClick={e=>e.stopPropagation()}>
                   <h3 style={{marginBottom:20}}>Nowy biohack</h3>
@@ -134,61 +209,7 @@ export default function Home({ me }) {
                   </div>
                </div>
              </div>
-           )}
-
-           {/* Lista Postów */}
-           <div style={{display:'flex', flexDirection:'column', gap:24}}>
-             {filteredPosts.map(p => (
-               <PostCard key={p._id} post={p} currentUser={me} onUpdate={handlePostUpdate} onDelete={handlePostDelete} />
-             ))}
-             {filteredPosts.length === 0 && (
-               <div style={{textAlign:'center', color:'#8b949e', marginTop:40, padding:40, background:'rgba(255,255,255,0.02)', borderRadius:16}}>
-                  <div style={{fontSize:'3rem', marginBottom:10}}>🧪</div>
-                  <h3>Brak wyników</h3>
-               </div>
-             )}
-           </div>
-        </div>
-
-        {/* 3. SIDEBAR */}
-        <aside className="sidebar">
-          <div className="box" style={{textAlign:'center'}}>
-            {me ? (
-                <div>
-                  <div className="user-avatar" style={{width:80, height:80, margin:'0 auto 16px', fontSize:'2rem', boxShadow:'0 0 20px rgba(0,230,118,0.15)', border:'2px solid #30363d'}}>
-                    {me.username[0].toUpperCase()}
-                  </div>
-                  <strong style={{display:'block', marginBottom:4, fontSize:'1.2rem', color:'#fff'}}>{me.username}</strong>
-                  <div style={{color:'#00e676', fontSize:'0.9rem', marginBottom:20}}>{me.email}</div>
-                  
-                  <button className="secondary" style={{width:'100%', borderRadius:99}} onClick={() => navigate(`/profile/${me.username}`)}>
-                    Mój profil
-                  </button>
-                </div>
-            ) : (
-                <div style={{padding:'10px 0'}}>
-                  <h3 style={{fontSize:'1.1rem', color:'#fff'}}>Dołącz do nas</h3>
-                  <div className="muted" style={{marginBottom:16}}>Zaloguj się, aby śledzić, komentować i dzielić się wiedzą.</div>
-                </div>
-            )}
-          </div>
-
-          <div className="box">
-            <h3 style={{fontSize:'1rem', borderBottom:'1px solid #30363d', paddingBottom:10, marginBottom:15, textTransform:'uppercase', letterSpacing:1, color:'#8b949e'}}>Popularne Tagi</h3>
-            <div style={{display:'flex', flexWrap:'wrap', gap:8}}>
-              {trendingTags.length > 0 ? trendingTags.map(t => (
-                <button 
-                  key={t.tag} 
-                  className="button-chip" 
-                  onClick={()=>setSearch(t.tag)}
-                  style={{background: search === t.tag ? 'rgba(0,230,118,0.2)' : ''}}
-                >
-                  #{t.tag} <span style={{opacity:0.6, marginLeft:4}}>({t.count})</span>
-                </button>
-              )) : <span className="muted">Brak danych</span>}
-            </div>
-          </div>
-        </aside>
+        )}
 
       </div>
     </div>

@@ -2,9 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-app: #0b0c10;       /* Bardzo ciemne tło strony */
-  --bg-card: #161b22;      /* Trochę jaśniejsze tło kart/postów */
-  --bg-input: #0d1117;     /* Ciemne tło dla inputów */
+  --bg-app: #0b0c10;
+  --bg-card: #161b22;
+  --bg-input: #0d1117;
   --border: #30363d;
   --accent: #00e676;
   --accent-glow: rgba(0, 230, 118, 0.15);
@@ -35,7 +35,7 @@ body {
 }
 
 .navbar-content {
-  width: 100%; max-width: 1200px; padding: 0 20px;
+  width: 100%; max-width: 1260px; padding: 0 20px;
   display: flex; justify-content: space-between; align-items: center;
 }
 
@@ -46,63 +46,75 @@ body {
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
-/* ---------- UKŁAD STRONY (Główna) ---------- */
+/* ---------- UKŁAD STRONY (SYMETRYCZNY GRID) ---------- */
 .container {
-  display: flex; justify-content: center;
+  display: flex; 
+  justify-content: center;
   padding: 30px 20px;
   min-height: calc(100vh - 60px);
 }
 
 .layout {
   display: grid;
-  /* Symetryczny układ: PUSTE | FEED (600px) | SIDEBAR (300px) */
-  grid-template-columns: 1fr 600px 300px 1fr;
+  /* Klucz do sukcesu: Lewa (pusta) i Prawa (sidebar) mają tę samą szerokość 300px */
+  /* Środek (posty) ma 600px. Dzięki temu środek jest IDEALNIE na środku ekranu. */
+  grid-template-columns: 300px 600px 300px;
   gap: 30px;
+  justify-content: center;
   width: 100%;
-  max-width: 1600px;
+  max-width: 1300px;
 }
 
-.layout-spacer-left { display: block; } /* Pusta kolumna lewa */
+/* Pusta kolumna lewa - musi być widoczna na dużym ekranie dla symetrii */
+.layout-left-spacer { display: block; width: 100%; }
 
 .main-column {
-  grid-column: 2; 
   width: 100%; 
-  max-width: 600px; /* Sztywna szerokość postów */
+  max-width: 600px; /* Sztywna szerokość */
 }
 
 .sidebar {
-  grid-column: 3; 
-  width: 300px; 
-  position: sticky; top: 90px;
+  width: 100%;
+  position: sticky; 
+  top: 80px;
 }
 
-/* ---------- UKŁAD PROFILU (Poprawiony) ---------- */
-/* To zapewni identyczną szerokość na profilu jak na głównej */
+/* Responsywność */
+@media (max-width: 1250px) {
+  /* Gdy ekran jest mniejszy, zwężamy boczne kolumny, ale układ zachowujemy */
+  .layout { grid-template-columns: 1fr 600px 1fr; gap: 20px; }
+  .sidebar { width: 100%; }
+}
+
+@media (max-width: 1000px) {
+  /* Tryb mobilny/tabletowy: Wszystko jedno pod drugim */
+  .layout { display: flex; flex-direction: column; align-items: center; }
+  .layout-left-spacer { display: none; } /* Ukrywamy pusty spacer */
+  .sidebar { 
+    width: 100%; 
+    max-width: 600px; 
+    position: static; 
+    order: -1; /* Sidebar nad postami (opcjonalnie usuń tę linię, jeśli ma być pod) */
+    margin-bottom: 20px; 
+  }
+}
+
+/* ---------- PROFIL ---------- */
+/* Zapewnia, że profil ma tę samą szerokość co posty na głównej */
 .profile-layout {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
 }
-
 .profile-content {
   width: 100%;
   max-width: 600px; /* Identycznie jak .main-column */
 }
 
-/* Responsywność */
-@media (max-width: 1000px) {
-  .layout { display: flex; flex-direction: column; align-items: center; }
-  .layout-spacer-left { display: none; }
-  .sidebar { width: 100%; max-width: 600px; position: static; order: -1; margin-bottom: 20px; }
-  .main-column { width: 100%; max-width: 600px; }
-}
 
-/* ---------- Post Header ---------- */
-.post-header {
-  display: flex; flexDirection: row; flex-wrap: nowrap;
-  align-items: flex-start; gap: 14px; margin-bottom: 14px;
-}
+/* ---------- Reszta Stylów ---------- */
+.post-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
 .user-avatar {
   width: 46px; height: 46px; border-radius: 50%;
   background: #21262d; border: 1px solid var(--border);
@@ -110,41 +122,27 @@ body {
   font-weight: 700; color: #fff; font-size: 1.1rem;
   flex-shrink: 0;
 }
-.user-info {
-  display: flex; flex-direction: column; flex: 1; min-width: 0;
-  justify-content: center; margin-top: 2px;
-}
+.user-info { display: flex; flex-direction: column; flex: 1; justify-content: center; margin-top: 2px; }
 
-/* ---------- Karty i Inputy ---------- */
 .card, .box {
-  background: var(--bg-card); /* To nadaje tło postom */
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px; margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Cień oddzielający */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-/* Styl dla inputa w wyszukiwarce (żeby miał tło) */
 .search-input-styled {
   width: 100%; padding: 12px 20px;
-  border-radius: 99px; 
-  border: 1px solid var(--border);
-  background: var(--bg-input) !important; /* Wymuszenie tła inputa */
-  color: #fff; font-size: 0.95rem;
-  transition: all 0.2s;
+  border-radius: 99px; border: 1px solid var(--border);
+  background: var(--bg-input) !important; color: #fff; font-size: 0.95rem; transition: all 0.2s;
 }
-.search-input-styled:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-  outline: none;
-}
+.search-input-styled:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); outline: none; }
 
-/* Inne inputy */
 .field { margin-bottom: 15px; width: 100%; }
 .field span { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.9rem; }
 input, textarea { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-family: inherit; }
 
-/* Przyciski */
 button {
   padding: 10px 18px; border-radius: 8px; border: none; font-weight: 600;
   background: var(--accent); color: #000; cursor: pointer; transition: 0.2s;
@@ -155,15 +153,12 @@ button.secondary { background: #21262d; color: var(--text-main); border: 1px sol
 button.secondary:hover { background: #30363d; border-color: #8b949e; }
 button.danger { background: rgba(255,60,60,0.1); color: #ff6b6b; border: 1px solid rgba(255,60,60,0.2); }
 
-/* Modal */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
 .modal { background: #161b22; border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 460px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-/* Utility */
 .row { display: flex; gap: 10px; align-items: center; width: 100%; }
 .muted { color: var(--text-muted); font-size: 0.85rem; }
 .button-chip { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #e6edf3; cursor: pointer; transition: 0.2s; }
 .button-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,230,118,0.05); }
-.profile-edit-clean { background: transparent; padding: 0; border: none; }
 img { max-width: 100%; border-radius: 8px; display: block; }
