@@ -1,4 +1,3 @@
-// server/index.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -7,27 +6,44 @@ const path = require('path');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Konfiguracja CORS - bezpieczniejsza niż domyślna
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Adres Twojego frontendu
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// serve uploads folder so frontend can access /uploads/filename
+// Serwowanie plików statycznych (uploads)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Healthcheck
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', uptime: process.uptime() });
 });
 
-// Routes (will be implemented)
+// Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/users', require('./routes/users'));
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: 'Wystąpił błąd serwera',
+    error: process.env.NODE_ENV === 'production' ? null : err.message 
+  });
+});
+
 // MongoDB connection
-const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/biohacker-platform';
+const mongoUri = process.env.MONGODB_URI;
+if (!mongoUri) {
+  console.error('FATAL: Brak MONGODB_URI w .env');
+  process.exit(1);
+}
 
 mongoose
   .connect(mongoUri)
