@@ -8,7 +8,6 @@ export default function ProfileEdit({ user, onCancel, onSave, busy = false }) {
     bio: user?.bio ?? ''
   });
 
-  // Reset form when user changes
   useEffect(() => {
     setForm({
       username: user?.username ?? '',
@@ -18,43 +17,44 @@ export default function ProfileEdit({ user, onCancel, onSave, busy = false }) {
   }, [user]);
 
   return (
-    <div className="profile-edit" style={{ marginTop: 12, padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f9f9f9' }}>
-      <h4>Edytuj profil</h4>
+    <div className="profile-edit-clean">
+      <h3 style={{marginBottom: 24, textAlign:'center'}}>Edytuj Profil</h3>
 
-      <label className="field">
-        <span>Username</span>
-        <input
-          autoFocus
-          value={form.username}
-          onChange={(e) => setForm(prev => ({ ...prev, username: e.target.value }))}
-        />
-      </label>
+      <div style={{ display:'flex', justifyContent:'center', marginBottom: 24 }}>
+         <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #21262d, #161b22)',
+            border: '1px solid #30363d', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '2rem', color: '#fff', fontWeight: 'bold'
+         }}>
+            {(form.username || '?')[0].toUpperCase()}
+         </div>
+      </div>
 
-      <label className="field" style={{ marginTop: 8 }}>
-        <span>Email</span>
-        <input
-          value={form.email}
-          onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))}
-        />
-      </label>
+      <div className="field">
+        <span>Nazwa użytkownika</span>
+        <input value={form.username} onChange={(e) => setForm(prev => ({ ...prev, username: e.target.value }))} />
+      </div>
 
-      <label className="field" style={{ marginTop: 8 }}>
-        <span>Bio</span>
+      <div className="field">
+        <span>Adres Email</span>
+        <input value={form.email} onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))} />
+      </div>
+
+      <div className="field">
+        <span>Bio (O mnie)</span>
         <textarea
           rows={4}
           value={form.bio}
           onChange={(e) => setForm(prev => ({ ...prev, bio: e.target.value }))}
+          placeholder="Opowiedz o swoich celach biohakingowych..."
         />
-      </label>
+      </div>
 
-      <div className="actions" style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-        <button type="button" className="secondary" onClick={onCancel} disabled={busy}>Anuluj</button>
-        <button
-          type="button"
-          onClick={() => onSave(form)}
-          disabled={busy}
-        >
-          {busy ? 'Zapisuję…' : 'Zapisz'}
+      <div style={{ display: 'flex', gap: 12, marginTop: 30, justifyContent: 'center' }}>
+        <button type="button" className="secondary" onClick={onCancel} disabled={busy} style={{width:'120px'}}>Anuluj</button>
+        <button type="button" onClick={() => onSave(form)} disabled={busy} style={{width:'160px'}}>
+          {busy ? 'Zapisywanie...' : 'Zapisz zmiany'}
         </button>
       </div>
     </div>

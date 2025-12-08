@@ -1,36 +1,51 @@
+// client-react/src/components/Navbar.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({ user, onLogout, onOpenLogin }) {
   const navigate = useNavigate();
 
-  function Avatar({ name, size = 30 }) {
-    const initials = (name || 'U').split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase();
-    return <div className="avatar" style={{width:size,height:size, display:'flex', alignItems:'center', justifyContent:'center', background:'#e5e7eb', borderRadius:'50%', fontSize:'0.8rem'}}>{initials}</div>;
+  function Avatar({ name }) {
+    return (
+      <div style={{
+        width:34, height:34, borderRadius:'50%', background:'#21262d', 
+        border:'1px solid #30363d', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.85rem', fontWeight:'bold', color:'#fff'
+      }}>
+        {(name || 'U')[0].toUpperCase()}
+      </div>
+    );
   }
 
   return (
     <div className="navbar">
-      <div className="brand" style={{cursor:'pointer'}} onClick={() => navigate('/')}>
-        <span className="logo"></span> Biohacker
-      </div>
-      <div className="nav-right">
-        {user ? (
-          <>
-            <span className="muted">Zalogowany jako</span>
-            <div style={{display:'flex', alignItems:'center', gap:8, cursor:'pointer'}} onClick={() => navigate(`/profile/${user.username}`)}>
-              <Avatar name={user.username} />
-              <strong>{user.username}</strong>
-            </div>
-            <button className="secondary" onClick={onLogout} style={{marginLeft:10}}>Wyloguj</button>
-          </>
-        ) : (
-          <>
-            <span className="muted">Niezalogowany</span>
-            <button className="secondary" onClick={() => onOpenLogin('login')}>Zaloguj</button>
-            <button onClick={() => onOpenLogin('register')}>Zarejestruj</button>
-          </>
-        )}
+      <div className="navbar-content">
+        <div className="brand" onClick={() => navigate('/')}>
+          <div className="logo-icon"></div>
+          <span>Biohacker Platform</span>
+        </div>
+        
+        <div className="nav-right">
+          {user ? (
+            <>
+              <div 
+                onClick={() => navigate(`/profile/${user.username}`)}
+                style={{display:'flex', alignItems:'center', gap:12, cursor:'pointer', padding:'6px 12px', borderRadius:20}}
+              >
+                <div style={{textAlign:'right', lineHeight:1.2}}>
+                  <div style={{fontSize:'0.75rem', color:'#8b949e'}}>Witaj</div>
+                  <div style={{fontWeight:600, fontSize:'0.9rem', color:'#fff'}}>{user.username}</div>
+                </div>
+                <Avatar name={user.username} />
+              </div>
+              <button className="secondary" onClick={onLogout} style={{padding:'8px 16px', borderRadius: 99}}>Wyloguj</button>
+            </>
+          ) : (
+            <>
+              <button className="secondary" onClick={() => onOpenLogin('login')} style={{borderRadius: 99}}>Zaloguj</button>
+              <button onClick={() => onOpenLogin('register')} style={{boxShadow: '0 0 15px rgba(0, 230, 118, 0.25)', borderRadius: 99}}>Rejestracja</button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

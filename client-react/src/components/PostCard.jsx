@@ -2,17 +2,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, getBaseUrl } from '../api';
-import EditPost from './EditPost'; // Upewnij się, że masz ten plik w components
+import EditPost from './EditPost'; 
 
 export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
-  const [comments, setComments] = useState([]); // Komentarze załadowane dynamicznie
+  const [comments, setComments] = useState([]); 
   const [newComment, setNewComment] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // --- Helpery ---
+  const isLiked = post.likes && currentUser && post.likes.includes(currentUser._id);
+  const isOwner = currentUser && (currentUser._id === post.author?._id);
+
   function timeAgo(iso) {
     if (!iso) return '';
     const diff = Date.now() - new Date(iso).getTime();
@@ -24,179 +26,115 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
     return `${Math.floor(h / 24)}d`;
   }
 
-  const isOwner = currentUser && (currentUser._id === post.author?._id || currentUser.id === post.author?._id);
-
   // --- Akcje ---
   async function handleLike() {
-    try {
-      await api(`/api/posts/${post._id}/like`, { method: 'POST', auth: true });
-      onUpdate(); // Odśwież listę w rodzicu
-    } catch (e) { console.error(e); }
+    try { await api(`/api/posts/${post._id}/like`, { method: 'POST', auth: true }); onUpdate(); } catch (e) {}
   }
-
   async function handleDelete() {
-    if (!confirm('Na pewno usunąć post?')) return;
-    try {
-      await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true });
-      onDelete(post._id);
-    } catch (e) { alert(e.message); }
+    if (confirm('Usunąć wpis?')) { try { await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); onDelete(post._id); } catch (e) {} }
   }
-
   async function toggleComments() {
-    const nextState = !commentsExpanded;
-    setCommentsExpanded(nextState);
-    if (nextState && comments.length === 0) {
-        loadComments();
-    }
+    if (!commentsExpanded) loadComments();
+    setCommentsExpanded(!commentsExpanded);
   }
-
   async function loadComments() {
-    try {
-      const out = await api(`/api/posts/${post._id}/comments`);
-      setComments(out.comments || []);
-    } catch (e) { console.error(e); }
+    try { const out = await api(`/api/posts/${post._id}/comments`); setComments(out.comments || []); } catch (e) {}
   }
-
   async function handleAddComment() {
     if (!newComment.trim()) return;
     setBusy(true);
-    try {
-      await api(`/api/posts/${post._id}/comments`, { method: 'POST', body: { text: newComment }, auth: true });
-      setNewComment('');
-      await loadComments(); // Przeładuj komentarze
-    } catch (e) { alert(e.message); }
-    finally { setBusy(false); }
+    try { await api(`/api/posts/${post._id}/comments`, { method: 'POST', body: { text: newComment }, auth: true }); setNewComment(''); loadComments(); } catch (e) {} finally { setBusy(false); }
   }
-
   async function handleSaveEdit(content, tagsArray, imageFile) {
     setBusy(true);
     try {
-      const fd = new FormData();
-      fd.append('content', content);
-      fd.append('tags', JSON.stringify(tagsArray));
-      if (imageFile) fd.append('image', imageFile);
-
-      // Token pobierze funkcja api/fetch, ale tutaj używamy fetch dla FormData
-      const token = localStorage.getItem('token'); 
-      const res = await fetch(`${getBaseUrl()}/api/posts/${post._id}`, {
-        method: 'PUT',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd
-      });
-      
-      if (!res.ok) throw new Error('Błąd edycji');
-      setIsEditing(false);
-      onUpdate(); // Odśwież widok
-    } catch (e) { alert(e.message); }
-    finally { setBusy(false); }
+      const fd = new FormData(); fd.append('content', content); fd.append('tags', JSON.stringify(tagsArray)); if(imageFile) fd.append('image', imageFile);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${getBaseUrl()}/api/posts/${post._id}`, { method: 'PUT', headers: token ? {Authorization:`Bearer ${token}`} : {}, body: fd });
+      if(!res.ok) throw new Error(); setIsEditing(false); onUpdate();
+    } catch(e) { alert('Błąd'); } finally { setBusy(false); }
   }
 
-  // --- Renderowanie ---
-  
-  // Tryb edycji
-  if (isEditing) {
-    return (
-      <li className="card">
-        <EditPost
-          initialContent={post.content}
-          initialTags={(post.tags || []).join(',')}
-          initialImage={post.imageUrl ? (post.imageUrl.startsWith('http') ? post.imageUrl : `${getBaseUrl()}${post.imageUrl}`) : null}
-          basicTags={['sleep','supplements','fitness','nootropics','diet']}
-          busy={busy}
-          onCancel={() => setIsEditing(false)}
-          onSave={handleSaveEdit}
-        />
-      </li>
-    );
-  }
+  if (isEditing) return <div className="card" style={{border:'1px solid #f59e0b'}}><EditPost initialContent={post.content} initialTags={(post.tags||[]).join(',')} initialImage={post.imageUrl ? (post.imageUrl.startsWith('http')?post.imageUrl:`${getBaseUrl()}${post.imageUrl}`) : null} onCancel={()=>setIsEditing(false)} onSave={handleSaveEdit} busy={busy}/></div>;
 
-  // Tryb wyświetlania
   return (
-    <li className="card">
-      <div className="header" style={{ display: 'flex', gap: 10 }}>
+    <div className="card">
+      <div className="post-header">
         <div 
-          className="avatar" 
-          style={{ width: 40, height: 40, background: '#eee', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}
+          className="user-avatar" 
           onClick={() => navigate(`/profile/${post.author?.username}`)}
+          style={{cursor:'pointer'}}
         >
           {(post.author?.username || '?')[0].toUpperCase()}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        
+        <div className="user-info">
+          <div style={{display:'flex', justifyContent:'space-between', width:'100%', alignItems:'center'}}>
             <div>
-              <strong style={{ cursor: 'pointer' }} onClick={() => navigate(`/profile/${post.author?.username}`)}>
+              <strong 
+                onClick={() => navigate(`/profile/${post.author?.username}`)}
+                style={{cursor:'pointer', color:'#fff', marginRight: 8, fontSize:'1.05rem'}}
+              >
                 {post.author?.username}
               </strong>
-              <span className="muted"> • {timeAgo(post.createdAt)}</span>
+              <span className="muted">{timeAgo(post.createdAt)}</span>
             </div>
+            
+            {isOwner && (
+              <button onClick={handleDelete} className="danger" style={{padding:'4px 8px', fontSize:'0.75rem', height:'auto'}}>Usuń</button>
+            )}
           </div>
-          <div style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>{post.content}</div>
         </div>
+      </div>
+
+      <div style={{color:'#e6edf3', fontSize:'1rem', whiteSpace:'pre-wrap', lineHeight:'1.6', marginBottom:12}}>
+        {post.content}
       </div>
 
       {post.imageUrl && (
-        <div style={{ marginTop: 10 }}>
-          <img 
-            src={post.imageUrl.startsWith('http') ? post.imageUrl : `${getBaseUrl()}${post.imageUrl}`} 
-            alt="post" 
-            style={{ maxWidth: '100%', borderRadius: 8 }} 
-          />
-        </div>
+        <img 
+          src={post.imageUrl.startsWith('http') ? post.imageUrl : `${getBaseUrl()}${post.imageUrl}`} 
+          alt="post" 
+          style={{width:'100%', borderRadius:8, marginBottom:12, border:'1px solid #30363d'}}
+        />
       )}
 
-      <div className="muted" style={{ marginTop: 8 }}>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom: 12 }}>
         {(post.tags || []).map(t => (
-          <span key={t} style={{ marginRight: 6, color: '#2563eb', fontSize: '0.9em' }}>#{t}</span>
+          <span key={t} style={{ fontSize: '0.85rem', color: '#00e676' }}>#{t}</span>
         ))}
       </div>
 
-      <div className="row" style={{ marginTop: 10, gap: 10 }}>
-        <button onClick={handleLike} className="secondary">
-          🖤 {post.likes?.length || 0}
+      <div style={{ paddingTop: 12, borderTop:'1px solid var(--border)', display:'flex', gap: 20 }}>
+        <button onClick={handleLike} style={{background:'transparent', padding:0, color: isLiked?'#ef4444':'#8b949e'}}>
+          {isLiked ? '❤️' : '🤍'} {post.likes?.length || 0}
         </button>
-        
-        <button onClick={toggleComments} className="secondary">
-          {commentsExpanded ? 'Schowaj kom.' : `Komentarze (${comments.length > 0 ? comments.length : ''})`}
+        <button onClick={toggleComments} style={{background:'transparent', padding:0, color:'#8b949e'}}>
+          💬 {commentsExpanded ? 'Ukryj' : 'Komentarze'}
         </button>
-
-        {isOwner && (
-          <>
-            <button onClick={() => setIsEditing(true)} style={{ background: '#f59e0b', color: 'white', border: 'none' }}>Edytuj</button>
-            <button onClick={handleDelete} className="danger">Usuń</button>
-          </>
-        )}
+        {isOwner && <button onClick={()=>setIsEditing(true)} style={{background:'transparent', padding:0, color:'#f59e0b', marginLeft:'auto'}}>Edytuj</button>}
       </div>
 
       {commentsExpanded && (
-        <div className="comments" style={{ marginTop: 15, borderTop: '1px solid #eee', paddingTop: 10 }}>
-          {currentUser ? (
-            <div className="row" style={{ marginBottom: 10 }}>
-              <input 
-                className="field" 
-                placeholder="Dodaj komentarz..." 
-                value={newComment} 
-                onChange={e => setNewComment(e.target.value)} 
-                style={{ flex: 1 }}
-              />
+        <div style={{marginTop:15, padding:15, background:'#0d1117', borderRadius:8}}>
+          {currentUser && (
+            <div style={{display:'flex', gap:10, marginBottom:15}}>
+              <input value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Komentarz..." onKeyDown={e=>e.key==='Enter'&&handleAddComment()} />
               <button onClick={handleAddComment} disabled={busy}>Dodaj</button>
             </div>
-          ) : (
-            <div className="muted" style={{ marginBottom: 10 }}>Zaloguj się, aby komentować.</div>
           )}
-
-          <ul className="list-unstyled">
+          <div style={{display:'flex', flexDirection:'column', gap:10}}>
             {comments.map(c => (
-              <li key={c._id} style={{ marginBottom: 8, padding: 8, background: '#f9fafb', borderRadius: 4 }}>
-                <div style={{ fontSize: '0.85em' }}>
-                  <strong>{c.author?.username || 'Anon'}</strong> <span className="muted">• {timeAgo(c.createdAt)}</span>
-                </div>
-                <div>{c.text}</div>
-              </li>
+              <div key={c._id}>
+                <strong style={{color:'#fff', fontSize:'0.9rem'}}>{c.author?.username}</strong>
+                <span className="muted" style={{marginLeft:6, fontSize:'0.75rem'}}>{timeAgo(c.createdAt)}</span>
+                <div style={{color:'#d0d7de', fontSize:'0.95rem'}}>{c.text}</div>
+              </div>
             ))}
-            {comments.length === 0 && <div className="muted">Brak komentarzy.</div>}
-          </ul>
+            {comments.length===0 && <div className="muted" style={{textAlign:'center'}}>Brak komentarzy.</div>}
+          </div>
         </div>
       )}
-    </li>
+    </div>
   );
 }

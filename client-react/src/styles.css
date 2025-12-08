@@ -1,293 +1,169 @@
-/* styles.css - ulepszona responsywność i drobne poprawki (ciemny motyw) */
+/* client-react/src/styles.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-app: #0b0c10;       /* Bardzo ciemne tło strony */
+  --bg-card: #161b22;      /* Trochę jaśniejsze tło kart/postów */
+  --bg-input: #0d1117;     /* Ciemne tło dla inputów */
+  --border: #30363d;
+  --accent: #00e676;
+  --accent-glow: rgba(0, 230, 118, 0.15);
+  --text-main: #e6edf3;
+  --text-muted: #8b949e;
+  --radius: 12px;
+}
 
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background:#0b0c10; color:#e6edf3; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  overflow-y: scroll;
+}
 
 /* ---------- Navbar ---------- */
 .navbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background:#0d1117;
-  border-bottom: 1px solid #1f2328;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
-.brand .logo { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg,#00e676,#00b0ff); display: inline-block; }
-.nav-right { display: flex; align-items: center; gap: 10px; }
-
-/* ---------- Shell / Layout ---------- */
-.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-.layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items:start; }
-
-/* responsive: single column under 920px */
-@media (max-width: 920px) {
-  .layout { grid-template-columns: 1fr; }
-  .sidebar { order: 2; }
-  .container { padding: 14px; }
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(11, 12, 16, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  height: 60px;
+  display: flex; justify-content: center;
 }
 
-/* ---------- Headings / Sections ---------- */
-h1,h2,h3 { margin: 12px 0; }
-section { border: 1px solid #1f2328; border-radius: 10px; padding: 16px; margin-bottom: 16px; background:#0d1117; }
-.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-/* ensure flex children can shrink to avoid overflow */
-.row > * { min-width: 0; }
-
-/* ---------- Form fields ---------- */
-.field { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
-.field input, .field textarea, .field select {
-  padding: 10px; border-radius: 10px; border: 1px solid #30363d; background:#161b22; color:#e6edf3;
-  font-size: 14px;
-}
-.field textarea { min-height: 72px; resize: vertical; }
-
-/* Improve long post input (textarea) sizing */
-.long-input {
-  width: 100%;
-  min-height: 80px;
-  max-height: 60vh; /* let it grow but not exceed viewport */
-  resize: vertical;
-  overflow: auto;
+.navbar-content {
+  width: 100%; max-width: 1200px; padding: 0 20px;
+  display: flex; justify-content: space-between; align-items: center;
 }
 
-/* auto-resize helper (if JS toggles class) */
-.long-input.auto-resize {
-  transition: max-height .18s ease, border-color .12s ease;
+.brand { font-weight: 700; color: #fff; display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 1.1rem; }
+.logo-icon { 
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #2979ff);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
-/* ---------- Buttons ---------- */
-button {
-  padding: 10px 14px;
-  border: 1px solid #30363d;
-  border-radius: 10px;
-  background:#238636;
-  color:white;
-  cursor:pointer;
-  font-size: 14px;
-}
-button.secondary { background:#21262d; color:#e6edf3; }
-button.danger { background:#a40e26; color:#fff; }
-button:disabled { opacity: .6; cursor: not-allowed; }
-
-/* small buttons used as tag chips */
-.button-chip, .secondary.chip {
-  padding:6px 10px; border-radius:999px; font-size:13px; white-space:nowrap;
+/* ---------- UKŁAD STRONY (Główna) ---------- */
+.container {
+  display: flex; justify-content: center;
+  padding: 30px 20px;
+  min-height: calc(100vh - 60px);
 }
 
-/* ---------- Lists / Cards ---------- */
-.list { list-style: none; padding: 0; margin: 0; display: block; }
-.card {
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  padding: 12px;
-  margin: 12px 0;
-  background:#0b0f14;
-  overflow: hidden;
-}
-.card .header { display: flex; gap: 10px; align-items: center; }
-.header { align-items: flex-start; }
-
-/* prevent flex children overflow (very important for long text) */
-.card .header > div, .header > div { min-width: 0; }
-
-/* ---------- Avatar ---------- */
-.avatar {
-  width: 36px; height: 36px; border-radius: 999px;
-  background:#11161d; display: grid; place-items: center; font-size: 12px; border:1px solid #30363d;
-  flex-shrink: 0;
-}
-
-/* if inline style overrides size, keep aspect ratio */
-.avatar[style] { display:inline-grid; }
-
-/* meta text next to avatar */
-.meta { display: flex; gap: 8px; align-items: center; overflow: hidden; }
-.muted { color:#9da7b1; font-size: 12px; }
-
-/* ---------- Images in posts ---------- */
-/* ensure images never overflow, scale properly and keep aspect ratio */
-.card img, .post-image, .edit-post img {
-  display:block;
-  width:100%;
-  height:auto;
-  max-width: 100%;
-  border-radius: 8px;
-  object-fit: cover; /* ważne: zapobiega rozciąganiu / rozjechaniu */
-  max-height: 700px; /* ograniczenie wysokości dużych obrazów */
-}
-
-/* small thumbnail preview used in add/edit forms */
-.preview-thumb { width:96px; height:96px; border-radius:8px; overflow:hidden; display:inline-block; }
-.preview-thumb img { width:100%; height:100%; object-fit:cover; }
-
-/* center images inside their wrapper (useful for tall/narrow images) */
-.post-image-wrap { display:flex; justify-content:center; align-items:center; overflow:hidden; }
-
-/* ---------- Comments ---------- */
-.comments { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #30363d; }
-.comment { display:flex; gap:10px; padding:8px 0; align-items:flex-start; }
-
-/* ---------- Sidebar ---------- */
-.sidebar .box { border: 1px solid #30363d; border-radius: 10px; padding: 12px; background:#0b0f14; }
-
-/* ---------- Toasts ---------- */
-.toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-.toast { background:#1a1f24; color:#e6edf3; border:1px solid #30363d; border-radius: 10px; padding: 10px 12px; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
-
-/* ---------- Spinner ---------- */
-.spinner { width: 18px; height: 18px; border: 2px solid #30363d; border-top-color: #e6edf3; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ---------- Modal ---------- */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; z-index: 2000; padding: 12px; }
-.modal { width: 100%; max-width: 720px; background:#0d1117; border:1px solid #30363d; border-radius: 12px; padding: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.5); max-height: calc(100vh - 48px); overflow:auto; }
-.modal .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-.tab { padding: 8px 12px; border:1px solid #30363d; border-radius: 999px; background:#21262d; cursor: pointer; color:#e6edf3; }
-.tab.active { background:#238636; color:#fff; }
-.modal .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
-
-/* smaller modal on phone screens */
-@media (max-width: 520px) {
-  .modal { max-width: 100%; padding: 12px; border-radius: 8px; margin: 8px; }
-}
-
-/* ---------- Small screen fixes ---------- */
-@media (max-width: 720px) {
-  .header { gap: 8px; }
-  .row { flex-direction: column; align-items: stretch; }
-  .field { min-width: 100%; }
-  .grid2 { grid-template-columns: 1fr; }
-}
-
-/* ---------- Expandable composer (component styles) ---------- */
-/* container */
-.expandable-composer {
-  width: 100%;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  padding: 10px;
-  background: linear-gradient(180deg, rgba(13,17,23,0.9), rgba(10,12,16,0.85));
-  transition: box-shadow .15s ease, transform .12s ease;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-  overflow: hidden;
-}
-
-/* collapsed state: small single-line input look */
-.expandable-composer.collapsed {
-  cursor: text;
-}
-.expandable-composer .composer-top {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-.expandable-composer .composer-avatar { flex-shrink: 0; margin-top: 6px; }
-
-/* the visible "starter" input */
-.expandable-composer .composer-stub {
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  color: #cfe8ff;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: text;
-}
-.expandable-composer .composer-stub::placeholder { color: #7f8b95; }
-
-/* expanded state */
-
-.expandable-composer .composer-body {
-  margin-top: 8px;
+.layout {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: start;
-}
-
-/* textarea area */
-.expandable-composer .composer-textarea {
+  /* Symetryczny układ: PUSTE | FEED (600px) | SIDEBAR (300px) */
+  grid-template-columns: 1fr 600px 300px 1fr;
+  gap: 30px;
   width: 100%;
-  min-height: 120px;
-  max-height: 60vh;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #2d3338;
-  background: #0b1115;
-  color: #e6edf3;
-  resize: vertical;
-  font-size: 14px;
-  overflow: auto;
-  transition: box-shadow .12s ease, border-color .12s ease;
+  max-width: 1600px;
 }
-.expandable-composer .composer-textarea::placeholder { color: #7f8b95; }
 
-/* right-side controls (image preview + actions) */
-.expandable-composer .composer-controls {
+.layout-spacer-left { display: block; } /* Pusta kolumna lewa */
+
+.main-column {
+  grid-column: 2; 
+  width: 100%; 
+  max-width: 600px; /* Sztywna szerokość postów */
+}
+
+.sidebar {
+  grid-column: 3; 
+  width: 300px; 
+  position: sticky; top: 90px;
+}
+
+/* ---------- UKŁAD PROFILU (Poprawiony) ---------- */
+/* To zapewni identyczną szerokość na profilu jak na głównej */
+.profile-layout {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-  min-width: 90px;
-}
-.expandable-composer .composer-actions { display:flex; gap:8px; }
-
-/* image input hidden with custom button */
-.expandable-composer .file-input { display:none; }
-.expandable-composer .btn-upload {
-  padding: 8px 10px;
-  border-radius: 8px;
-  background:#20262b;
-  border:1px solid #2f3a40;
-  font-size:13px;
-  color:#dbe9ff;
-  cursor:pointer;
-}
-.expandable-composer .preview-thumb { width:86px; height:86px; }
-
-/* small screen: controls go under textarea */
-@media (max-width: 560px) {
-  .expandable-composer .composer-body { grid-template-columns: 1fr; }
-  .expandable-composer .composer-controls { flex-direction: row; justify-content: space-between; align-items: center; }
-  .expandable-composer .composer-actions { margin-left: auto; }
+  align-items: center;
+  width: 100%;
 }
 
-/* ---------- Edit post panel tweaks ---------- */
-.edit-post {
-  margin-top:8px;
-  padding:8px;
-  border:1px solid rgba(0,0,0,0.06);
-  border-radius:6px;
-  background: linear-gradient(180deg, rgba(11,15,20,0.6), rgba(9,11,14,0.6));
+.profile-content {
+  width: 100%;
+  max-width: 600px; /* Identycznie jak .main-column */
 }
-.edit-post label.field { margin-bottom: 6px; }
-.edit-post img { border-radius:8px; max-height: 420px; object-fit: contain; }
 
-/* make the save/cancel row stick visually */
-.edit-post .actions { display:flex; gap:8px; justify-content:flex-end; }
+/* Responsywność */
+@media (max-width: 1000px) {
+  .layout { display: flex; flex-direction: column; align-items: center; }
+  .layout-spacer-left { display: none; }
+  .sidebar { width: 100%; max-width: 600px; position: static; order: -1; margin-bottom: 20px; }
+  .main-column { width: 100%; max-width: 600px; }
+}
 
-/* ---------- Accessibility & small helpful tweaks ---------- */
-button:focus, input:focus, textarea:focus { outline: 2px solid rgba(36, 153, 255, 0.12); outline-offset: 2px; }
-a { color: #9ad0ff; text-decoration: none; }
-a:hover { text-decoration: underline; }
+/* ---------- Post Header ---------- */
+.post-header {
+  display: flex; flexDirection: row; flex-wrap: nowrap;
+  align-items: flex-start; gap: 14px; margin-bottom: 14px;
+}
+.user-avatar {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: #21262d; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.user-info {
+  display: flex; flex-direction: column; flex: 1; min-width: 0;
+  justify-content: center; margin-top: 2px;
+}
 
-/* ---------- Utility / small tweaks ---------- */
-.error { color:#ff6b6b; margin-bottom: 8px; }
-.pre { white-space: pre-wrap; background:#0b0f14; border:1px solid #30363d; padding:8px; border-radius:8px; }
-.secondary.chip { background:#21262d; border-color: #2b343b; }
-.card .header strong { font-size: 15px; }
-.card .header .muted { font-size: 13px; }
+/* ---------- Karty i Inputy ---------- */
+.card, .box {
+  background: var(--bg-card); /* To nadaje tło postom */
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px; margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Cień oddzielający */
+}
 
-/* ensure clickable tag buttons do not wrap ugly */
-.button-chip { white-space: nowrap; }
+/* Styl dla inputa w wyszukiwarce (żeby miał tło) */
+.search-input-styled {
+  width: 100%; padding: 12px 20px;
+  border-radius: 99px; 
+  border: 1px solid var(--border);
+  background: var(--bg-input) !important; /* Wymuszenie tła inputa */
+  color: #fff; font-size: 0.95rem;
+  transition: all 0.2s;
+}
+.search-input-styled:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: none;
+}
 
-/* end of file */
+/* Inne inputy */
+.field { margin-bottom: 15px; width: 100%; }
+.field span { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.9rem; }
+input, textarea { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-family: inherit; }
+
+/* Przyciski */
+button {
+  padding: 10px 18px; border-radius: 8px; border: none; font-weight: 600;
+  background: var(--accent); color: #000; cursor: pointer; transition: 0.2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+button.secondary { background: #21262d; color: var(--text-main); border: 1px solid var(--border); }
+button.secondary:hover { background: #30363d; border-color: #8b949e; }
+button.danger { background: rgba(255,60,60,0.1); color: #ff6b6b; border: 1px solid rgba(255,60,60,0.2); }
+
+/* Modal */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+.modal { background: #161b22; border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 460px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Utility */
+.row { display: flex; gap: 10px; align-items: center; width: 100%; }
+.muted { color: var(--text-muted); font-size: 0.85rem; }
+.button-chip { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #e6edf3; cursor: pointer; transition: 0.2s; }
+.button-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,230,118,0.05); }
+.profile-edit-clean { background: transparent; padding: 0; border: none; }
+img { max-width: 100%; border-radius: 8px; display: block; }
