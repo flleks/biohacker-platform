@@ -16,25 +16,27 @@ export default function App() {
   const [authTab, setAuthTab] = useState('login');
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isLargeText, setIsLargeText] = useState(false);
+  // --- POPRAWKA 1: Odczyt localStorage przy inicjalizacji (zapobiega miganiu) ---
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    // Domyślnie ciemny (true), chyba że zapisano 'light'
+    return savedTheme !== 'light';
+  });
+
+  const [isLargeText, setIsLargeText] = useState(() => {
+    const savedSize = localStorage.getItem('textSize');
+    return savedSize === 'large';
+  });
 
   useEffect(() => {
     loadMe();
-    
-    // Odczyt z localStorage
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') setIsDarkMode(false);
-    
-    const savedSize = localStorage.getItem('textSize');
-    if (savedSize === 'large') setIsLargeText(true);
   }, []);
 
-  // --- POPRAWKA: Nakładanie klas na HTML, a nie BODY ---
+  // --- Efekt nakładający klasy na HTML ---
   useEffect(() => {
     const html = document.documentElement;
     
-    // Motyw
+    // Obsługa motywu
     if (isDarkMode) {
       html.classList.remove('light-mode');
       localStorage.setItem('theme', 'dark');
@@ -43,7 +45,7 @@ export default function App() {
       localStorage.setItem('theme', 'light');
     }
 
-    // Czcionka
+    // Obsługa czcionki
     if (isLargeText) {
       html.classList.add('large-text');
       localStorage.setItem('textSize', 'large');
@@ -86,9 +88,9 @@ export default function App() {
 
   const themeProps = {
     isDarkMode, 
-    toggleTheme: () => setIsDarkMode(!isDarkMode),
+    toggleTheme: () => setIsDarkMode(prev => !prev),
     isLargeText, 
-    toggleTextSize: () => setIsLargeText(!isLargeText)
+    toggleTextSize: () => setIsLargeText(prev => !prev)
   };
 
   if (checkingAuth) {
@@ -98,10 +100,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-container">
+        {/* --- POPRAWKA 2: Przekazanie themeProps do Navbar --- */}
         <Navbar 
           user={me} 
           onLogout={handleLogout} 
           onOpenLogin={openAuth} 
+          {...themeProps} 
         />
 
         <Routes>

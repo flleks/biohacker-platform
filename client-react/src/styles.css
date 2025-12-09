@@ -5,7 +5,7 @@
   /* --- MOTYW CIEMNY (Domyślny) --- */
   --bg-app: #0b0c10;
   --bg-card: #161b22;
-  --bg-input: #0d1117; /* Tło inputów i ciemniejszych sekcji */
+  --bg-input: #0d1117; 
   --bg-hover: #21262d;
   
   --border: #30363d;
@@ -17,12 +17,11 @@
   --text-main: #e6edf3;
   --text-muted: #8b949e;
   --text-danger: #ff7b72;
-  --bg-danger: rgba(255, 60, 60, 0.1);
+  --bg-danger: rgba(255, 60, 60, 0.1); /* Tło dla przycisku usuwania */
   
   --radius: 12px;
   --radius-round: 99px;
   
-  /* Domyślny przycisk tekst */
   --btn-text: #0b0c10; 
 }
 
@@ -35,25 +34,24 @@ html.light-mode {
   
   --border: #ced0d4;
   
-  --accent: #00a855; /* Ciemniejszy zielony dla kontrastu */
+  --accent: #00a855; 
   --accent-hover: #008f45;
   --accent-glow: rgba(0, 168, 85, 0.15);
   
   --text-main: #1c1e21;
   --text-muted: #65676b;
   --text-danger: #d32f2f;
-  --bg-danger: rgba(255, 0, 0, 0.05);
+  --bg-danger: rgba(255, 0, 0, 0.1); 
   
   --btn-text: #ffffff;
 }
 
 /* --- LOGIKA CZCIONKI --- */
 html {
-  font-size: 16px; /* Baza */
+  font-size: 16px; 
   transition: font-size 0.2s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Klasa .large-text powiększa bazę, co skaluje wszystkie jednostki 'rem' */
 html.large-text {
   font-size: 20px; 
 }
@@ -135,6 +133,10 @@ button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 .btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+
+/* --- NOWA KLASA: Naprawia widoczność przycisku usuwania --- */
+.btn-danger { background: var(--bg-danger); color: var(--text-danger); border: 1px solid transparent; }
+.btn-danger:hover { background: var(--text-danger); color: #fff; }
 
 .btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 50%; background: transparent; color: var(--text-muted); }
 .btn-icon:hover { background: var(--bg-hover); color: var(--text-main); }

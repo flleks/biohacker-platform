@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({ 
   user, onLogout, onOpenLogin,
+  // Te propsy są teraz poprawnie przekazywane z App.jsx
   isDarkMode, toggleTheme,
   isLargeText, toggleTextSize
 }) {
@@ -19,7 +20,7 @@ export default function Navbar({
         
         <div className="nav-right" style={{display:'flex', alignItems:'center', gap:15}}>
           
-          {/* --- NOWE PRZYCISKI DOSTĘPNOŚCI --- */}
+          {/* Sekcja przycisków dostępności */}
           <div style={{display:'flex', gap: 8, paddingRight: 15, borderRight: '1px solid var(--border)'}}>
             <button 
               className="btn-icon" 

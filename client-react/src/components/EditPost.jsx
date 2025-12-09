@@ -16,16 +16,13 @@ export default function EditPost({
   const [preview, setPreview] = useState(initialImage);
   const [submitting, setSubmitting] = useState(false);
 
-  // Synchronizacja, gdy rodzic zmieni propsy
   useEffect(() => setContent(initialContent ?? ''), [initialContent]);
   useEffect(() => setTags(initialTags ?? ''), [initialTags]);
   
-  // Reset podglądu gdy zmienia się initialImage z zewnątrz
   useEffect(() => {
     if (!imageFile) setPreview(initialImage ?? null);
   }, [initialImage, imageFile]);
 
-  // Cleanup blob URL przy odmontowaniu
   useEffect(() => {
     return () => {
       if (preview && preview.startsWith('blob:')) {
@@ -34,7 +31,6 @@ export default function EditPost({
     };
   }, []);
 
-  // Parsowanie tagów (usuwanie duplikatów)
   const parsedTags = useMemo(() => {
     const arr = (tags || '').split(',').map(t => t.trim()).filter(Boolean);
     return Array.from(new Set(arr));
@@ -77,11 +73,10 @@ export default function EditPost({
   }
 
   return (
-    // USUNIĘTO marginTop: 15, aby nie było paska nad oknem
-    <div style={{ padding: 25, background: '#1c2128', borderRadius: 8, border: '1px solid #30363d' }}>
-      <h3 style={{marginBottom: 20, marginTop: 0}}>Edycja posta</h3>
+    // POPRAWKA: Usunięto padding, background i border - dziedziczy styl z modala
+    <div style={{ width: '100%' }}>
+      <h3 style={{marginBottom: 20, marginTop: 0, color: 'var(--text-main)'}}>Edycja posta</h3>
       
-      {/* Treść */}
       <textarea 
         value={content}
         onChange={e => setContent(e.target.value)}
@@ -90,7 +85,6 @@ export default function EditPost({
         style={{minHeight: 140, marginBottom: 16, width: '100%', display: 'block'}}
       />
 
-      {/* Tagi - Input */}
       <div className="field">
         <span>Tagi</span>
         <input 
@@ -101,7 +95,6 @@ export default function EditPost({
         />
       </div>
 
-      {/* Tagi - Chips (z funkcją odznaczania) */}
       {basicTags && basicTags.length > 0 && (
         <div style={{display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16}}>
           {basicTags.map(t => {
@@ -114,9 +107,9 @@ export default function EditPost({
                 onClick={() => togglePreset(t)}
                 disabled={busy || submitting}
                 style={isActive ? {
-                  background: 'rgba(0, 230, 118, 0.15)', 
-                  borderColor: '#00e676', 
-                  color: '#00e676'
+                  background: 'var(--accent-glow)', 
+                  borderColor: 'var(--accent)', 
+                  color: 'var(--accent)'
                 } : {}}
               >
                 {isActive ? `✓ ${t}` : `+ ${t}`}
@@ -126,7 +119,6 @@ export default function EditPost({
         </div>
       )}
 
-      {/* Zdjęcie */}
       <div className="field">
         <span>Zdjęcie</span>
         <input 
@@ -137,7 +129,6 @@ export default function EditPost({
         />
       </div>
 
-      {/* Podgląd zdjęcia */}
       {preview && (
         <div style={{marginTop: 10}}>
           <img src={preview} alt="Podgląd" style={{maxHeight: 200, borderRadius: 8}} />
@@ -147,7 +138,6 @@ export default function EditPost({
         </div>
       )}
 
-      {/* Przyciski Akcji */}
       <div style={{marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 12}}>
         <button
           className="btn-secondary"
