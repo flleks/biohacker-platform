@@ -11,6 +11,9 @@ export default function Home({ me }) {
   const [busy, setBusy] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   
+  // Stan paginacji (Load More)
+  const [visibleCount, setVisibleCount] = useState(10);
+
   const [postContent, setPostContent] = useState('');
   const [postTags, setPostTags] = useState('');
   const [postImageFile, setPostImageFile] = useState(null);
@@ -20,12 +23,28 @@ export default function Home({ me }) {
 
   useEffect(() => { loadPosts(); }, []);
 
+  // Reset licznika postów przy zmianie wyszukiwania
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [search]);
+
   async function loadPosts() {
     try { const out = await api('/api/posts'); setPosts(out.posts || []); } catch (e) { console.error(e); }
   }
 
   const handlePostUpdate = () => loadPosts();
   const handlePostDelete = (id) => setPosts(prev => prev.filter(p => p._id !== id));
+
+  function toggleComposerTag(t) {
+    const currentTags = postTags ? postTags.split(',').map(x => x.trim()).filter(Boolean) : [];
+    const set = new Set(currentTags);
+    if (set.has(t)) set.delete(t); else set.add(t);
+    setPostTags(Array.from(set).join(', '));
+  }
+  
+  const activeComposerTags = useMemo(() => {
+     return postTags ? postTags.split(',').map(x => x.trim()) : [];
+  }, [postTags]);
 
   async function createPost() {
     setBusy(true);
@@ -49,7 +68,6 @@ export default function Home({ me }) {
     finally { setBusy(false); }
   }
 
-  // --- FILTROWANIE ---
   const filteredPosts = useMemo(() => {
     if (!search.trim()) return posts;
     const q = search.toLowerCase();
@@ -59,6 +77,8 @@ export default function Home({ me }) {
       return contentMatch || tagsMatch;
     });
   }, [posts, search]);
+
+  const visiblePosts = filteredPosts.slice(0, visibleCount);
 
   const trendingTags = useMemo(() => {
     const count = {};
@@ -73,10 +93,8 @@ export default function Home({ me }) {
     <div className="container">
       <div className="layout">
         
-        {/* 1. LEWA KOLUMNA - PUSTY SPACER */}
         <div className="layout-left-spacer"></div>
 
-        {/* 2. GŁÓWNA KOLUMNA - ŚRODEK */}
         <div className="main-column">
            
            {/* WYSZUKIWARKA */}
@@ -99,19 +117,78 @@ export default function Home({ me }) {
              </div>
            </section>
 
-           {/* LISTA POSTÓW */}
-           <section className="box" style={{background: '#161b22'}}> 
-              <div className="flex-between" style={{marginBottom: 20}}>
-                  <h2 style={{margin:0, fontSize:'1.5rem'}}>Posty</h2>
-                  {me && (
-                    <button className="btn-primary" onClick={()=>setComposerOpen(true)}>
-                      + Dodaj
-                    </button>
-                  )}
+            {/* --- PASEK TWORZENIA POSTA --- */}
+            {me && (
+              <div 
+                className="box" 
+                onClick={() => setComposerOpen(true)}
+                style={{
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 12, 
+                  cursor: 'pointer',
+                  marginBottom: 25, 
+                  border: '1px solid rgba(48, 54, 61, 0.6)', 
+                  transition: 'all 0.2s ease-in-out',
+                  padding: '12px 16px',
+                  background: '#161b22',
+                  borderRadius: '12px'
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.borderColor = '#8b949e';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.borderColor = 'rgba(48, 54, 61, 0.6)';
+                  e.currentTarget.style.transform = 'none';
+                }}
+              >
+                 {/* Awatar */}
+                 <div className="user-avatar small" style={{
+                    width: 46, height: 46, fontSize: '0.9rem',
+                    flexShrink: 0, 
+                    background: '#21262d',
+                    color: '#e6edf3',
+                    border: '1px solid #30363d',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%'
+                 }}>
+                    {me.username[0].toUpperCase()}
+                 </div>
+
+                 {/* Input - ZMIENIONO TEKST */}
+                 <div style={{
+                    flex: 1, 
+                    color: '#8b949e', 
+                    fontSize: '0.85rem',
+                    background: '#0d1117', 
+                    border: '1px solid #30363d',
+                    borderRadius: '20px', 
+                    padding: '8px 12px',
+                    userSelect: 'none'
+                 }}>
+                    Podziel się swoimi postępami w optymalizacji...
+                 </div>
+
+                 {/* Przycisk */}
+                 <button className="btn-primary" style={{
+                     padding: '8px 12px',
+                     borderRadius: '20px', 
+                     flexShrink: 0,
+                     fontWeight: 600,
+                     fontSize: '0.85rem',
+                     lineHeight: '1.2'
+                 }}>
+                    <span style={{marginRight: 4}}>+</span>Dodaj
+                 </button>
               </div>
+            )}
+
+           {/* LISTA POSTÓW */}
+           <section className="box"> 
+              <h3 className="box-title" style={{marginBottom: 20}}>Posty</h3>
 
               <div style={{display:'flex', flexDirection:'column', gap:20}}>
-                {filteredPosts.map(p => (
+                {visiblePosts.map(p => (
                   <div key={p._id}>
                      <PostCard post={p} currentUser={me} onUpdate={handlePostUpdate} onDelete={handlePostDelete} />
                   </div>
@@ -123,11 +200,33 @@ export default function Home({ me }) {
                       <h3 className="muted">Brak wyników</h3>
                   </div>
                 )}
+
+                {/* PRZYCISK POKAŻ WIĘCEJ */}
+                {visibleCount < filteredPosts.length && (
+                  <button 
+                    onClick={() => setVisibleCount(prev => prev + 10)}
+                    style={{
+                      width: '100%', 
+                      padding: '12px 0', 
+                      marginTop: 15,
+                      background: '#21262d',
+                      border: '1px solid #30363d',
+                      borderRadius: 8,
+                      color: '#c9d1d9',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = '#30363d'}
+                    onMouseOut={e => e.currentTarget.style.background = '#21262d'}
+                  >
+                    ⬇ Pokaż więcej ({filteredPosts.length - visibleCount})
+                  </button>
+                )}
               </div>
            </section>
         </div>
 
-        {/* 3. PRAWA KOLUMNA - SIDEBAR */}
         <aside className="sidebar">
           <div className="box text-center">
             {me ? (
@@ -180,14 +279,28 @@ export default function Home({ me }) {
                     <span>Tagi</span>
                     <input value={postTags} onChange={e=>setPostTags(e.target.value)} placeholder="np. sleep, diet, nootropics" />
                   </div>
+                  
                   <div style={{display:'flex', gap:8, flexWrap:'wrap', marginBottom:16}}>
-                      {BASIC_TAGS.map(t => (
-                          <button key={t} type="button" className="chip" onClick={() => {
-                              const cur = postTags ? postTags.split(',').map(x=>x.trim()).filter(Boolean) : [];
-                              if(!cur.includes(t)) setPostTags([...cur, t].join(', '));
-                          }}>+ {t}</button>
-                      ))}
+                      {BASIC_TAGS.map(t => {
+                          const isActive = activeComposerTags.includes(t);
+                          return (
+                            <button 
+                                key={t} 
+                                type="button" 
+                                className="chip" 
+                                onClick={() => toggleComposerTag(t)}
+                                style={isActive ? {
+                                    background: 'rgba(0, 230, 118, 0.15)', 
+                                    borderColor: '#00e676', 
+                                    color: '#00e676'
+                                } : {}}
+                            >
+                                {isActive ? `✓ ${t}` : `+ ${t}`}
+                            </button>
+                          );
+                      })}
                   </div>
+                  
                   <div className="field">
                      <span>Zdjęcie</span>
                      <input type="file" onChange={e => {

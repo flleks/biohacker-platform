@@ -82,8 +82,8 @@ export default function App() {
         <AuthModal 
           isOpen={isAuthModalOpen} 
           onClose={() => setAuthModalOpen(false)}
-          initialTab={authTab}
-          onSuccess={() => {
+          initialMode={authTab}
+          onLoginSuccess={() => {
             loadMe(); // Odśwież stan 'me' po zalogowaniu
           }}
         />

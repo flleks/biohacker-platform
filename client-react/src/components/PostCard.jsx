@@ -1,5 +1,5 @@
 // client-react/src/components/PostCard.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, getBaseUrl } from '../api';
 import EditPost from './EditPost'; 
@@ -7,10 +7,22 @@ import EditPost from './EditPost';
 export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [comments, setComments] = useState([]); 
   const [newComment, setNewComment] = useState('');
+  
+  // Inicjalizujemy stan od razu wartością z propsów
+  const [commentsCount, setCommentsCount] = useState(post.comments ? post.comments.length : 0);
+
   const [busy, setBusy] = useState(false);
+
+  const BASIC_TAGS = ['sleep','supplements','fitness','nootropics','diet'];
+
+  // Aktualizuj licznik, gdy zmienią się dane z zewnątrz
+  useEffect(() => {
+    setCommentsCount(post.comments ? post.comments.length : 0);
+  }, [post.comments]);
 
   const isLiked = post.likes && currentUser && post.likes.includes(currentUser._id);
   const isOwner = currentUser && (currentUser._id === post.author?._id);
@@ -29,20 +41,34 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
   async function handleLike() {
     try { await api(`/api/posts/${post._id}/like`, { method: 'POST', auth: true }); onUpdate(); } catch (e) {}
   }
+
   async function handleDelete() {
     if (confirm('Usunąć wpis?')) { try { await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); onDelete(post._id); } catch (e) {} }
   }
+
   async function toggleComments() {
     if (!commentsExpanded) loadComments();
     setCommentsExpanded(!commentsExpanded);
   }
+
   async function loadComments() {
     try { const out = await api(`/api/posts/${post._id}/comments`); setComments(out.comments || []); } catch (e) {}
   }
+
   async function handleAddComment() {
     if (!newComment.trim()) return;
     setBusy(true);
-    try { await api(`/api/posts/${post._id}/comments`, { method: 'POST', body: { text: newComment }, auth: true }); setNewComment(''); loadComments(); } catch (e) {} finally { setBusy(false); }
+    try { 
+        await api(`/api/posts/${post._id}/comments`, { method: 'POST', body: { text: newComment }, auth: true }); 
+        setNewComment(''); 
+        loadComments(); 
+        setCommentsCount(prev => prev + 1); 
+        if (onUpdate) onUpdate();
+    } catch (e) {
+      console.error(e);
+    } finally { 
+      setBusy(false); 
+    }
   }
   
   async function handleSaveEdit(content, tagsArray, imageFile) {
@@ -64,17 +90,18 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
 
   return (
     <>
-      {/* --- OKNO MODALNE DO EDYCJI (Wyświetla się nad stroną) --- */}
       {isEditing && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <h2 style={{marginTop:0, borderBottom:'1px solid var(--border)', paddingBottom:15, marginBottom:20}}>
-              Edytuj wpis
-            </h2>
+        <div className="modal-backdrop" onClick={() => setIsEditing(false)}>
+          <div 
+            className="modal" 
+            onClick={e => e.stopPropagation()}
+            style={{ padding: 0, background: 'transparent', boxShadow: 'none' }}
+          >
             <EditPost 
                 initialContent={post.content} 
                 initialTags={(post.tags||[]).join(',')} 
                 initialImage={post.imageUrl ? (post.imageUrl.startsWith('http')?post.imageUrl:`${getBaseUrl()}${post.imageUrl}`) : null} 
+                basicTags={BASIC_TAGS}
                 onCancel={()=>setIsEditing(false)} 
                 onSave={handleSaveEdit} 
                 busy={busy}
@@ -83,7 +110,6 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
         </div>
       )}
 
-      {/* --- KARTA POSTA (Zawsze widoczna w tle) --- */}
       <div className="card">
         <div className="post-header">
           <div 
@@ -135,8 +161,10 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
           <button onClick={handleLike} style={{background:'transparent', padding:0, color: isLiked?'#ef4444':'#8b949e'}}>
             {isLiked ? '❤️' : '🤍'} {post.likes?.length || 0}
           </button>
+          
+          {/* ZMIANA: Usunięto nawiasy i dodano spację przed liczbą */}
           <button onClick={toggleComments} style={{background:'transparent', padding:0, color:'#8b949e'}}>
-            💬 {commentsExpanded ? 'Ukryj' : 'Komentarze'}
+            💬 {commentsExpanded ? 'Ukryj' : 'Komentarze'} <span style={{opacity: 0.8}}>{commentsCount}</span>
           </button>
           
           {isOwner && (

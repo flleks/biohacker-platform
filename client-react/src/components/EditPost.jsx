@@ -32,7 +32,7 @@ export default function EditPost({
         try { URL.revokeObjectURL(preview); } catch (e) {}
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Parsowanie tagów (usuwanie duplikatów)
   const parsedTags = useMemo(() => {
@@ -44,13 +44,12 @@ export default function EditPost({
     const cur = new Set(parsedTags);
     if (cur.has(t)) cur.delete(t);
     else cur.add(t);
-    setTags(Array.from(cur).join(','));
+    setTags(Array.from(cur).join(', '));
   }
 
   function handleImageChange(e) {
     const file = e.target.files?.[0] ?? null;
     
-    // Posprzątaj poprzedni blob
     if (preview && preview.startsWith('blob:')) {
       try { URL.revokeObjectURL(preview); } catch (e) {}
     }
@@ -78,68 +77,80 @@ export default function EditPost({
   }
 
   return (
-    <div className="edit-post card" style={{ marginTop: 8, padding: 15, border: '1px solid #eee' }}>
-      <h4>Edycja posta</h4>
+    // USUNIĘTO marginTop: 15, aby nie było paska nad oknem
+    <div style={{ padding: 25, background: '#1c2128', borderRadius: 8, border: '1px solid #30363d' }}>
+      <h3 style={{marginBottom: 20, marginTop: 0}}>Edycja posta</h3>
       
-      <label className="field">
-        <span>Treść</span>
-        <textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          rows={4}
-          disabled={busy || submitting}
-        />
-      </label>
+      {/* Treść */}
+      <textarea 
+        value={content}
+        onChange={e => setContent(e.target.value)}
+        placeholder="Opisz swoje odkrycie..." 
+        disabled={busy || submitting}
+        style={{minHeight: 140, marginBottom: 16, width: '100%', display: 'block'}}
+      />
 
-      <label className="field" style={{ marginTop: 8 }}>
-        <span>Tagi (oddzielone przecinkami)</span>
-        <input
+      {/* Tagi - Input */}
+      <div className="field">
+        <span>Tagi</span>
+        <input 
           value={tags}
           onChange={e => setTags(e.target.value)}
-          placeholder="np. sleep, diet"
+          placeholder="np. sleep, diet, nootropics"
           disabled={busy || submitting}
         />
-      </label>
+      </div>
 
+      {/* Tagi - Chips (z funkcją odznaczania) */}
       {basicTags && basicTags.length > 0 && (
-        <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16}}>
           {basicTags.map(t => {
             const isActive = parsedTags.includes(t);
             return (
               <button
                 key={t}
                 type="button"
-                className="button-chip secondary"
+                className="chip"
                 onClick={() => togglePreset(t)}
-                style={{ 
-                  backgroundColor: isActive ? '#e5e7eb' : 'transparent',
-                  border: isActive ? '1px solid #ccc' : '1px solid transparent'
-                }}
+                disabled={busy || submitting}
+                style={isActive ? {
+                  background: 'rgba(0, 230, 118, 0.15)', 
+                  borderColor: '#00e676', 
+                  color: '#00e676'
+                } : {}}
               >
-                {isActive ? `✓ ${t}` : t}
+                {isActive ? `✓ ${t}` : `+ ${t}`}
               </button>
             );
           })}
         </div>
       )}
 
-      <label className="field" style={{ marginTop: 15 }}>
-        <span>Zmień obrazek (opcjonalne)</span>
-        <input type="file" accept="image/*" onChange={handleImageChange} disabled={busy || submitting} />
-      </label>
+      {/* Zdjęcie */}
+      <div className="field">
+        <span>Zdjęcie</span>
+        <input 
+          type="file" 
+          accept="image/*" 
+          onChange={handleImageChange} 
+          disabled={busy || submitting} 
+        />
+      </div>
 
+      {/* Podgląd zdjęcia */}
       {preview && (
-        <div style={{ marginTop: 10 }}>
-          <img src={preview} alt="Podgląd" style={{ maxHeight: 200, borderRadius: 8, objectFit: 'contain' }} />
-          <div className="muted" style={{ fontSize: 12 }}>
-            {imageFile ? 'Nowy plik do wysłania.' : 'Obecny obrazek.'}
+        <div style={{marginTop: 10}}>
+          <img src={preview} alt="Podgląd" style={{maxHeight: 200, borderRadius: 8}} />
+          <div className="muted" style={{fontSize: '0.8rem', marginTop: 5}}>
+            {imageFile ? 'Wybrano nowe zdjęcie.' : 'Obecne zdjęcie.'}
           </div>
         </div>
       )}
 
-      <div className="actions" style={{ marginTop: 15, display: 'flex', gap: 10 }}>
+      {/* Przyciski Akcji */}
+      <div style={{marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 12}}>
         <button
-          className="secondary"
+          className="btn-secondary"
           type="button"
           onClick={() => {
             if (preview && preview.startsWith('blob:')) {
@@ -153,6 +164,7 @@ export default function EditPost({
         </button>
 
         <button
+          className="btn-primary"
           type="button"
           onClick={handleSave}
           disabled={busy || submitting}
