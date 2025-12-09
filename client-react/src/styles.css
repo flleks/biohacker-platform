@@ -7,10 +7,12 @@
   --bg-input: #0d1117;
   --border: #30363d;
   --accent: #00e676;
+  --accent-hover: #00c853;
   --accent-glow: rgba(0, 230, 118, 0.15);
   --text-main: #e6edf3;
   --text-muted: #8b949e;
   --radius: 12px;
+  --radius-round: 99px;
 }
 
 * { box-sizing: border-box; }
@@ -39,14 +41,17 @@ body {
   display: flex; justify-content: space-between; align-items: center;
 }
 
-.brand { font-weight: 700; color: #fff; display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 1.1rem; }
+.brand { 
+  font-weight: 700; color: #fff; display: flex; align-items: center; gap: 12px; 
+  cursor: pointer; font-size: 1.1rem; letter-spacing: -0.5px;
+}
 .logo-icon { 
   width: 28px; height: 28px; border-radius: 8px;
   background: linear-gradient(135deg, var(--accent), #2979ff);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
-/* ---------- UKŁAD STRONY (SYMETRYCZNY GRID) ---------- */
+/* ---------- UKŁAD STRONY (GRID) ---------- */
 .container {
   display: flex; 
   justify-content: center;
@@ -56,109 +61,140 @@ body {
 
 .layout {
   display: grid;
-  /* Klucz do sukcesu: Lewa (pusta) i Prawa (sidebar) mają tę samą szerokość 300px */
-  /* Środek (posty) ma 600px. Dzięki temu środek jest IDEALNIE na środku ekranu. */
   grid-template-columns: 300px 600px 300px;
   gap: 30px;
-  justify-content: center;
   width: 100%;
   max-width: 1300px;
 }
 
-/* Pusta kolumna lewa - musi być widoczna na dużym ekranie dla symetrii */
 .layout-left-spacer { display: block; width: 100%; }
-
-.main-column {
-  width: 100%; 
-  max-width: 600px; /* Sztywna szerokość */
-}
-
-.sidebar {
-  width: 100%;
-  position: sticky; 
-  top: 80px;
-}
+.main-column { width: 100%; max-width: 600px; }
+.sidebar { width: 100%; position: sticky; top: 90px; height: fit-content; }
 
 /* Responsywność */
 @media (max-width: 1250px) {
-  /* Gdy ekran jest mniejszy, zwężamy boczne kolumny, ale układ zachowujemy */
   .layout { grid-template-columns: 1fr 600px 1fr; gap: 20px; }
-  .sidebar { width: 100%; }
 }
 
 @media (max-width: 1000px) {
-  /* Tryb mobilny/tabletowy: Wszystko jedno pod drugim */
   .layout { display: flex; flex-direction: column; align-items: center; }
-  .layout-left-spacer { display: none; } /* Ukrywamy pusty spacer */
-  .sidebar { 
-    width: 100%; 
-    max-width: 600px; 
-    position: static; 
-    order: -1; /* Sidebar nad postami (opcjonalnie usuń tę linię, jeśli ma być pod) */
-    margin-bottom: 20px; 
-  }
+  .layout-left-spacer { display: none; }
+  .main-column, .sidebar { width: 100%; max-width: 600px; }
+  .sidebar { order: -1; position: static; margin-bottom: 20px; }
 }
 
-/* ---------- PROFIL ---------- */
-/* Zapewnia, że profil ma tę samą szerokość co posty na głównej */
-.profile-layout {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-.profile-content {
-  width: 100%;
-  max-width: 600px; /* Identycznie jak .main-column */
-}
-
-
-/* ---------- Reszta Stylów ---------- */
-.post-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
-.user-avatar {
-  width: 46px; height: 46px; border-radius: 50%;
-  background: #21262d; border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; color: #fff; font-size: 1.1rem;
-  flex-shrink: 0;
-}
-.user-info { display: flex; flex-direction: column; flex: 1; justify-content: center; margin-top: 2px; }
+/* ---------- Komponenty UI ---------- */
 
 .card, .box {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px; margin-bottom: 20px;
+  padding: 25px; 
+  margin-bottom: 20px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-.search-input-styled {
-  width: 100%; padding: 12px 20px;
-  border-radius: 99px; border: 1px solid var(--border);
-  background: var(--bg-input) !important; color: #fff; font-size: 0.95rem; transition: all 0.2s;
+.box-title {
+  font-size: 1rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 1px; margin: 0 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px;
 }
-.search-input-styled:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); outline: none; }
-
-.field { margin-bottom: 15px; width: 100%; }
-.field span { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.9rem; }
-input, textarea { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-family: inherit; }
 
 button {
   padding: 10px 18px; border-radius: 8px; border: none; font-weight: 600;
-  background: var(--accent); color: #000; cursor: pointer; transition: 0.2s;
+  font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
-button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-button.secondary { background: #21262d; color: var(--text-main); border: 1px solid var(--border); }
-button.secondary:hover { background: #30363d; border-color: #8b949e; }
-button.danger { background: rgba(255,60,60,0.1); color: #ff6b6b; border: 1px solid rgba(255,60,60,0.2); }
+button:hover { transform: translateY(-1px); }
+button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
-.modal { background: #161b22; border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 460px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.btn-primary { background: var(--accent); color: #0b0c10; }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 12px var(--accent-glow); }
+
+.btn-secondary { background: #21262d; color: var(--text-main); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #30363d; border-color: #8b949e; }
+
+.btn-danger { background: rgba(255,60,60,0.1); color: #ff6b6b; border: 1px solid rgba(255,60,60,0.2); }
+.btn-danger:hover { background: rgba(255,60,60,0.2); }
+
+.btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+.btn-round { border-radius: var(--radius-round); }
+
+input, textarea { 
+  width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border); 
+  border-radius: 8px; color: #fff; font-family: inherit; transition: 0.2s;
+}
+input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.1); }
+
+.search-input-styled { border-radius: var(--radius-round); padding: 12px 20px; }
+
+.field { margin-bottom: 15px; width: 100%; }
+.field span { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.85rem; }
+
+/* ---------- NAPRAWIONE AWATARY ---------- */
+.user-avatar {
+  width: 46px; height: 46px; /* Domyślny rozmiar */
+  background: #21262d; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; font-size: 1.1rem;
+  
+  /* KLUCZOWE: Zapobiega ściskaniu kółka w Flexboxie */
+  flex-shrink: 0; 
+  border-radius: 50%;
+  
+  /* KLUCZOWE: Przycina obrazek do kółka */
+  overflow: hidden; 
+  position: relative;
+  
+  /* Zabezpieczenie, jeśli obrazek jest dodany bezpośrednio z klasą */
+  object-fit: cover; 
+}
+
+/* Naprawia obrazki wewnątrz awatara */
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Zachowuje proporcje, wypełnia całe kółko */
+  display: block;
+}
+
+/* Rozmiary awatarów */
+.user-avatar.small { width: 38px; height: 38px; font-size: 0.9rem; }
+.user-avatar.medium { width: 46px; height: 46px; font-size: 1.1rem; }
+.user-avatar.large { 
+  width: 100px; height: 100px; font-size: 2.5rem; 
+  box-shadow: 0 0 20px var(--accent-glow);
+  margin: 0 auto 16px;
+  border: 3px solid var(--border);
+}
+
+.chip { 
+  padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; background: rgba(255,255,255,0.05); 
+  border: 1px solid var(--border); color: #e6edf3; cursor: pointer; transition: 0.2s; 
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,230,118,0.05); }
+.chip.active { background: rgba(0,230,118,0.2); border-color: var(--accent); color: var(--accent); }
+
+.modal-backdrop { 
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; 
+  display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); 
+}
+.modal { 
+  background: #161b22; border: 1px solid var(--border); border-radius: 16px; padding: 30px; 
+  width: 100%; max-width: 460px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); 
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+}
 @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-.row { display: flex; gap: 10px; align-items: center; width: 100%; }
+.row { display: flex; gap: 10px; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
 .muted { color: var(--text-muted); font-size: 0.85rem; }
-.button-chip { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #e6edf3; cursor: pointer; transition: 0.2s; }
-.button-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,230,118,0.05); }
+.text-center { text-align: center; }
 img { max-width: 100%; border-radius: 8px; display: block; }
+.post-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+.user-info { display: flex; flex-direction: column; flex: 1; justify-content: center; margin-top: 2px; }
+
+.nav-profile-btn {
+  display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 10px 4px 4px; 
+  border-radius: 20px; transition: 0.2s; background: rgba(255,255,255,0.05); border: 1px solid transparent;
+}
+.nav-profile-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--border); }

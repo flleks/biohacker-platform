@@ -1,61 +1,90 @@
 // client-react/src/components/ProfileEdit.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { api } from '../api';
 
-export default function ProfileEdit({ user, onCancel, onSave, busy = false }) {
-  const [form, setForm] = useState({
-    username: user?.username ?? '',
-    email: user?.email ?? '',
-    bio: user?.bio ?? ''
-  });
+export default function ProfileEdit({ user, onClose, onSave }) {
+  const [username, setUsername] = useState(user.username || '');
+  const [email, setEmail] = useState(user.email || '');
+  const [bio, setBio] = useState(user.bio || '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    setForm({
-      username: user?.username ?? '',
-      email: user?.email ?? '',
-      bio: user?.bio ?? ''
-    });
-  }, [user]);
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+
+    try {
+      // Wysyłamy aktualizację do endpointu PUT /api/users/:id
+      await api(`/api/users/${user._id}`, {
+        method: 'PUT',
+        auth: true,
+        body: {
+          username,
+          email,
+          bio
+        }
+      });
+      
+      // Jeśli sukces, wywołaj onSave (który odświeży widok w rodzicu)
+      onSave();
+    } catch (err) {
+      console.error(err);
+      setError("Nie udało się zaktualizować profilu. Sprawdź poprawność danych.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <div className="profile-edit-clean">
-      <h3 style={{marginBottom: 24, textAlign:'center'}}>Edytuj Profil</h3>
+    <div className="modal-backdrop">
+      <div className="modal">
+        <h2 style={{marginTop:0}}>Edytuj Profil</h2>
+        
+        {error && <div style={{color:'#ff6b6b', marginBottom:15, fontSize:'0.9rem'}}>{error}</div>}
 
-      <div style={{ display:'flex', justifyContent:'center', marginBottom: 24 }}>
-         <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #21262d, #161b22)',
-            border: '1px solid #30363d', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '2rem', color: '#fff', fontWeight: 'bold'
-         }}>
-            {(form.username || '?')[0].toUpperCase()}
-         </div>
-      </div>
+        <form onSubmit={handleSubmit}>
+          
+          <div className="field">
+            <span>Nazwa użytkownika</span>
+            <input 
+              type="text" 
+              value={username} 
+              onChange={e => setUsername(e.target.value)}
+              required 
+            />
+          </div>
 
-      <div className="field">
-        <span>Nazwa użytkownika</span>
-        <input value={form.username} onChange={(e) => setForm(prev => ({ ...prev, username: e.target.value }))} />
-      </div>
+          <div className="field">
+            <span>Email</span>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)}
+              required 
+            />
+          </div>
 
-      <div className="field">
-        <span>Adres Email</span>
-        <input value={form.email} onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))} />
-      </div>
+          <div className="field">
+            <span>Bio (Twój opis)</span>
+            <textarea 
+              rows={4}
+              value={bio} 
+              onChange={e => setBio(e.target.value)} 
+              placeholder="Napisz coś o sobie..."
+            />
+          </div>
 
-      <div className="field">
-        <span>Bio (O mnie)</span>
-        <textarea
-          rows={4}
-          value={form.bio}
-          onChange={(e) => setForm(prev => ({ ...prev, bio: e.target.value }))}
-          placeholder="Opowiedz o swoich celach biohakingowych..."
-        />
-      </div>
+          <div style={{display:'flex', gap:10, justifyContent:'flex-end', marginTop:20}}>
+            <button type="button" className="secondary" onClick={onClose} disabled={busy}>
+              Anuluj
+            </button>
+            <button type="submit" disabled={busy}>
+              {busy ? 'Zapisywanie...' : 'Zapisz zmiany'}
+            </button>
+          </div>
 
-      <div style={{ display: 'flex', gap: 12, marginTop: 30, justifyContent: 'center' }}>
-        <button type="button" className="secondary" onClick={onCancel} disabled={busy} style={{width:'120px'}}>Anuluj</button>
-        <button type="button" onClick={() => onSave(form)} disabled={busy} style={{width:'160px'}}>
-          {busy ? 'Zapisywanie...' : 'Zapisz zmiany'}
-        </button>
+        </form>
       </div>
     </div>
   );
