@@ -1,15 +1,14 @@
+// client-react/src/App.jsx
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Importujemy nasze nowe komponenty
 import Navbar from './components/Navbar';
 import AuthModal from './components/AuthModal';
 import Home from './pages/Home';
 import ProfilePage from './pages/ProfilePage';
 
-// Import funkcji API
 import { api, getToken, setToken } from './api';
-import './styles.css'; // Zakładam, że styles.css został bez zmian
+import './styles.css'; 
 
 export default function App() {
   const [me, setMe] = useState(null);
@@ -17,10 +16,42 @@ export default function App() {
   const [authTab, setAuthTab] = useState('login');
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Sprawdź przy starcie, czy mamy token i pobierz usera
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isLargeText, setIsLargeText] = useState(false);
+
   useEffect(() => {
     loadMe();
+    
+    // Odczyt z localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') setIsDarkMode(false);
+    
+    const savedSize = localStorage.getItem('textSize');
+    if (savedSize === 'large') setIsLargeText(true);
   }, []);
+
+  // --- POPRAWKA: Nakładanie klas na HTML, a nie BODY ---
+  useEffect(() => {
+    const html = document.documentElement;
+    
+    // Motyw
+    if (isDarkMode) {
+      html.classList.remove('light-mode');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      html.classList.add('light-mode');
+      localStorage.setItem('theme', 'light');
+    }
+
+    // Czcionka
+    if (isLargeText) {
+      html.classList.add('large-text');
+      localStorage.setItem('textSize', 'large');
+    } else {
+      html.classList.remove('large-text');
+      localStorage.setItem('textSize', 'normal');
+    }
+  }, [isDarkMode, isLargeText]);
 
   async function loadMe() {
     setCheckingAuth(true);
@@ -34,7 +65,6 @@ export default function App() {
       const out = await api('/api/auth/me', { auth: true });
       setMe(out.user);
     } catch (e) {
-      // Jeśli token wygasł lub jest zły -> wyloguj
       console.error("Session expired", e);
       setToken('');
       setMe(null);
@@ -46,7 +76,6 @@ export default function App() {
   function handleLogout() {
     setToken('');
     setMe(null);
-    // Przekieruj na główną (opcjonalnie)
     window.location.href = '/';
   }
 
@@ -55,6 +84,13 @@ export default function App() {
     setAuthModalOpen(true);
   }
 
+  const themeProps = {
+    isDarkMode, 
+    toggleTheme: () => setIsDarkMode(!isDarkMode),
+    isLargeText, 
+    toggleTextSize: () => setIsLargeText(!isLargeText)
+  };
+
   if (checkingAuth) {
     return <div style={{ padding: 20 }}>Ładowanie aplikacji...</div>;
   }
@@ -62,30 +98,23 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-container">
-        {/* Nawigacja zawsze widoczna na górze */}
         <Navbar 
           user={me} 
           onLogout={handleLogout} 
           onOpenLogin={openAuth} 
         />
 
-        {/* Routing - tutaj zmienia się treść w zależności od adresu */}
         <Routes>
-          <Route path="/" element={<Home me={me} />} />
-          <Route path="/profile/:username" element={<ProfilePage me={me} />} />
-          
-          {/* Przekierowanie nieznanych adresów na Home */}
+          <Route path="/" element={<Home me={me} {...themeProps} />} />
+          <Route path="/profile/:username" element={<ProfilePage me={me} {...themeProps} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
-        {/* Modal logowania dostępny globalnie */}
         <AuthModal 
           isOpen={isAuthModalOpen} 
           onClose={() => setAuthModalOpen(false)}
           initialMode={authTab}
-          onLoginSuccess={() => {
-            loadMe(); // Odśwież stan 'me' po zalogowaniu
-          }}
+          onLoginSuccess={() => loadMe()}
         />
       </div>
     </BrowserRouter>

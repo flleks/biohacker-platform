@@ -7,19 +7,14 @@ import EditPost from './EditPost';
 export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [comments, setComments] = useState([]); 
   const [newComment, setNewComment] = useState('');
-  
-  // Inicjalizujemy stan od razu wartością z propsów
   const [commentsCount, setCommentsCount] = useState(post.comments ? post.comments.length : 0);
-
   const [busy, setBusy] = useState(false);
 
   const BASIC_TAGS = ['sleep','supplements','fitness','nootropics','diet'];
 
-  // Aktualizuj licznik, gdy zmienią się dane z zewnątrz
   useEffect(() => {
     setCommentsCount(post.comments ? post.comments.length : 0);
   }, [post.comments]);
@@ -64,11 +59,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
         loadComments(); 
         setCommentsCount(prev => prev + 1); 
         if (onUpdate) onUpdate();
-    } catch (e) {
-      console.error(e);
-    } finally { 
-      setBusy(false); 
-    }
+    } catch (e) {} finally { setBusy(false); }
   }
   
   async function handleSaveEdit(content, tagsArray, imageFile) {
@@ -82,7 +73,6 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
       const token = localStorage.getItem('token');
       const res = await fetch(`${getBaseUrl()}/api/posts/${post._id}`, { method: 'PUT', headers: token ? {Authorization:`Bearer ${token}`} : {}, body: fd });
       if(!res.ok) throw new Error(); 
-      
       setIsEditing(false); 
       onUpdate(); 
     } catch(e) { alert('Błąd podczas edycji'); } finally { setBusy(false); }
@@ -92,11 +82,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
     <>
       {isEditing && (
         <div className="modal-backdrop" onClick={() => setIsEditing(false)}>
-          <div 
-            className="modal" 
-            onClick={e => e.stopPropagation()}
-            style={{ padding: 0, background: 'transparent', boxShadow: 'none' }}
-          >
+          <div className="modal" onClick={e => e.stopPropagation()} style={{boxShadow:'none'}}>
             <EditPost 
                 initialContent={post.content} 
                 initialTags={(post.tags||[]).join(',')} 
@@ -125,7 +111,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
               <div>
                 <strong 
                   onClick={() => navigate(`/profile/${post.author?.username}`)}
-                  style={{cursor:'pointer', color:'#fff', marginRight: 8, fontSize:'1.05rem'}}
+                  style={{cursor:'pointer', color:'var(--text-main)', marginRight: 8, fontSize:'1.05rem'}}
                 >
                   {post.author?.username}
                 </strong>
@@ -133,13 +119,14 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
               </div>
               
               {isOwner && (
-                <button onClick={handleDelete} className="danger" style={{padding:'4px 8px', fontSize:'0.75rem', height:'auto'}}>Usuń</button>
+                <button onClick={handleDelete} className="btn-danger" style={{padding:'4px 8px', fontSize:'0.75rem', height:'auto'}}>Usuń</button>
               )}
             </div>
           </div>
         </div>
 
-        <div style={{color:'#e6edf3', fontSize:'1rem', whiteSpace:'pre-wrap', lineHeight:'1.6', marginBottom:12}}>
+        {/* Użycie zmiennych CSS dla koloru tekstu */}
+        <div style={{color:'var(--text-main)', fontSize:'1rem', whiteSpace:'pre-wrap', lineHeight:'1.6', marginBottom:12}}>
             {post.content}
         </div>
 
@@ -147,7 +134,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
             <img 
             src={post.imageUrl.startsWith('http') ? post.imageUrl : `${getBaseUrl()}${post.imageUrl}`} 
             alt="post" 
-            style={{width:'100%', borderRadius:8, marginBottom:12, border:'1px solid #30363d'}}
+            style={{width:'100%', borderRadius:8, marginBottom:12, border:'1px solid var(--border)'}}
             />
         )}
 
@@ -158,12 +145,11 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
         </div>
 
         <div style={{ paddingTop: 12, borderTop:'1px solid var(--border)', display:'flex', gap: 20 }}>
-          <button onClick={handleLike} style={{background:'transparent', padding:0, color: isLiked?'#ef4444':'#8b949e'}}>
+          <button onClick={handleLike} style={{background:'transparent', padding:0, color: isLiked?'#ef4444':'var(--text-muted)'}}>
             {isLiked ? '❤️' : '🤍'} {post.likes?.length || 0}
           </button>
           
-          {/* ZMIANA: Usunięto nawiasy i dodano spację przed liczbą */}
-          <button onClick={toggleComments} style={{background:'transparent', padding:0, color:'#8b949e'}}>
+          <button onClick={toggleComments} style={{background:'transparent', padding:0, color:'var(--text-muted)'}}>
             💬 {commentsExpanded ? 'Ukryj' : 'Komentarze'} <span style={{opacity: 0.8}}>{commentsCount}</span>
           </button>
           
@@ -178,19 +164,19 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
         </div>
 
         {commentsExpanded && (
-          <div style={{marginTop:15, padding:15, background:'#0d1117', borderRadius:8}}>
+          <div style={{marginTop:15, padding:15, background:'var(--bg-input)', borderRadius:8}}>
             {currentUser && (
               <div style={{display:'flex', gap:10, marginBottom:15}}>
                 <input value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Napisz komentarz..." onKeyDown={e=>e.key==='Enter'&&handleAddComment()} />
-                <button onClick={handleAddComment} disabled={busy} className="secondary" style={{padding: '0 15px'}}>Dodaj</button>
+                <button onClick={handleAddComment} disabled={busy} className="btn-secondary" style={{padding: '0 15px'}}>Dodaj</button>
               </div>
             )}
             <div style={{display:'flex', flexDirection:'column', gap:10}}>
               {comments.map(c => (
                 <div key={c._id}>
-                  <strong style={{color:'#fff', fontSize:'0.9rem'}}>{c.author?.username}</strong>
+                  <strong style={{color:'var(--text-main)', fontSize:'0.9rem'}}>{c.author?.username}</strong>
                   <span className="muted" style={{marginLeft:6, fontSize:'0.75rem'}}>{timeAgo(c.createdAt)}</span>
-                  <div style={{color:'#d0d7de', fontSize:'0.95rem'}}>{c.text}</div>
+                  <div style={{color:'var(--text-main)', fontSize:'0.95rem', opacity: 0.9}}>{c.text}</div>
                 </div>
               ))}
               {comments.length===0 && <div className="muted" style={{textAlign:'center'}}>Brak komentarzy.</div>}

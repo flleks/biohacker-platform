@@ -2,7 +2,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function Navbar({ user, onLogout, onOpenLogin }) {
+export default function Navbar({ 
+  user, onLogout, onOpenLogin,
+  isDarkMode, toggleTheme,
+  isLargeText, toggleTextSize
+}) {
   const navigate = useNavigate();
 
   return (
@@ -14,6 +18,32 @@ export default function Navbar({ user, onLogout, onOpenLogin }) {
         </div>
         
         <div className="nav-right" style={{display:'flex', alignItems:'center', gap:15}}>
+          
+          {/* --- NOWE PRZYCISKI DOSTĘPNOŚCI --- */}
+          <div style={{display:'flex', gap: 8, paddingRight: 15, borderRight: '1px solid var(--border)'}}>
+            <button 
+              className="btn-icon" 
+              onClick={toggleTheme}
+              title={isDarkMode ? "Włącz jasny motyw" : "Włącz ciemny motyw"}
+              style={{background: 'transparent', border:'none', fontSize: '1.2rem', cursor:'pointer'}}
+            >
+              {isDarkMode ? '☀️' : '🌙'}
+            </button>
+
+            <button 
+              className="btn-icon" 
+              onClick={toggleTextSize}
+              title={isLargeText ? "Zmniejsz czcionkę" : "Zwiększ czcionkę"}
+              style={{
+                background: 'transparent', border:'none', fontSize: '1rem', fontWeight:'bold', 
+                cursor:'pointer', color: 'var(--text-main)',
+                display: 'flex', alignItems: 'center'
+              }}
+            >
+              {isLargeText ? 'A-' : 'A+'}
+            </button>
+          </div>
+
           {user ? (
             <>
               <div 
@@ -23,7 +53,7 @@ export default function Navbar({ user, onLogout, onOpenLogin }) {
                 <div className="user-avatar small">
                   {(user.username || 'U')[0].toUpperCase()}
                 </div>
-                <div style={{fontWeight:600, fontSize:'0.9rem', color:'#e6edf3', paddingRight: 5}}>
+                <div style={{fontWeight:600, fontSize:'0.9rem', color:'var(--text-main)', paddingRight: 5}}>
                   {user.username}
                 </div>
               </div>
