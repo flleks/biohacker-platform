@@ -1,14 +1,11 @@
 // client-react/src/api.js
 
-// Pobieramy adres z .env (Vite) lub domyślnie localhost
 const BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
-// Helper: Pobierz URL (dla obrazków itp.)
 export function getBaseUrl() {
   return BASE_URL;
 }
 
-// Token trzymamy w localStorage (prosta implementacja dla inżynierki)
 export function getToken() {
   return localStorage.getItem('token') || '';
 }
@@ -21,7 +18,6 @@ export function setToken(token) {
   }
 }
 
-// Główna funkcja fetchująca
 export async function api(path, { method = 'GET', body, auth = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   
@@ -38,14 +34,17 @@ export async function api(path, { method = 'GET', body, auth = false } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // Obsługa pustych odpowiedzi (np. 204 No Content)
   const isJson = res.headers.get('content-type')?.includes('application/json');
   const data = isJson ? await res.json().catch(() => ({})) : {};
 
   if (!res.ok) {
-    // Jeśli token wygasł (401), możemy opcjonalnie wyczyścić go tutaj
+    // POPRAWKA: Automatyczne wylogowanie przy 401 (token expired/invalid)
+    // Jest to dobra praktyka w aplikacjach SPA
     if (res.status === 401) {
-      // setToken(null); // Opcjonalnie: wyloguj automatycznie
+      setToken(null);
+      // Opcjonalnie: można tu dodać event/dispatch, żeby UI od razu zareagowało,
+      // ale window.location w komponencie App.jsx obsłuży to przy przeładowaniu
+      // lub przy kolejnym requeście loadMe.
     }
     throw new Error(data?.message || `Request failed: ${res.status}`);
   }
