@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import AuthModal from './components/AuthModal';
 import Home from './pages/Home';
 import ProfilePage from './pages/ProfilePage';
+import Footer from './components/Footer'; // <--- DODANO IMPORT STOPKI
 
 import { api, getToken, setToken } from './api';
 import './styles.css'; 
@@ -16,7 +17,7 @@ export default function App() {
   const [authTab, setAuthTab] = useState('login');
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // --- POPRAWKA 1: Odczyt localStorage przy inicjalizacji (zapobiega miganiu) ---
+  // Inicjalizacja motywu z localStorage (zapobiega miganiu jasnego tła przy odświeżaniu)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     // Domyślnie ciemny (true), chyba że zapisano 'light'
@@ -32,7 +33,7 @@ export default function App() {
     loadMe();
   }, []);
 
-  // --- Efekt nakładający klasy na HTML ---
+  // Efekt nakładający klasy .light-mode i .large-text na element <html>
   useEffect(() => {
     const html = document.documentElement;
     
@@ -45,7 +46,7 @@ export default function App() {
       localStorage.setItem('theme', 'light');
     }
 
-    // Obsługa czcionki
+    // Obsługa rozmiaru czcionki
     if (isLargeText) {
       html.classList.add('large-text');
       localStorage.setItem('textSize', 'large');
@@ -99,8 +100,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-container">
-        {/* --- POPRAWKA 2: Przekazanie themeProps do Navbar --- */}
+      {/* ZMIANA: Flex container ustawiony w kolumnę na pełną wysokość ekranu */}
+      <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        
         <Navbar 
           user={me} 
           onLogout={handleLogout} 
@@ -108,11 +110,17 @@ export default function App() {
           {...themeProps} 
         />
 
-        <Routes>
-          <Route path="/" element={<Home me={me} {...themeProps} />} />
-          <Route path="/profile/:username" element={<ProfilePage me={me} {...themeProps} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        {/* ZMIANA: Ten div zajmuje całą dostępną przestrzeń (flex: 1), wypychając stopkę na dół */}
+        <div style={{ flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<Home me={me} {...themeProps} />} />
+            <Route path="/profile/:username" element={<ProfilePage me={me} {...themeProps} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+
+        {/* ZMIANA: Dodanie komponentu Footer na samym dole kontenera */}
+        <Footer />
 
         <AuthModal 
           isOpen={isAuthModalOpen} 
