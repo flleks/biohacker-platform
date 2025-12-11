@@ -81,7 +81,7 @@ export default function ProfilePage({ me, onUpdateMe }) {
           )}
 
           {/* POPRAWKA: Zamiana sztywnych kolorów na zmienne var(--) */}
-          <div style={{ padding: 25, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border)' }}>
+          <div style={{ padding: 15, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border)' }}>
             
             <div style={{marginBottom: 20, paddingLeft: 10, borderLeft: '4px solid var(--accent)'}}>
                <h3 style={{margin:0, color: 'var(--text-main)'}}>Wpisy użytkownika</h3>
@@ -130,7 +130,7 @@ export default function ProfilePage({ me, onUpdateMe }) {
 
         </div>
 
-        <div className="sidebar"></div>
+        
 
       </div>
     </div>
