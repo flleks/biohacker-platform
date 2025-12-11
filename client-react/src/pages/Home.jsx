@@ -11,7 +11,6 @@ export default function Home({ me }) {
   const [busy, setBusy] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   
-  // Stan paginacji (Load More)
   const [visibleCount, setVisibleCount] = useState(10);
 
   const [postContent, setPostContent] = useState('');
@@ -23,7 +22,6 @@ export default function Home({ me }) {
 
   useEffect(() => { loadPosts(); }, []);
 
-  // Reset licznika postów przy zmianie wyszukiwania
   useEffect(() => {
     setVisibleCount(10);
   }, [search]);
@@ -117,7 +115,7 @@ export default function Home({ me }) {
              </div>
            </section>
 
-            {/* --- PASEK TWORZENIA POSTA --- */}
+            {/* --- PASEK TWORZENIA POSTA (POPRAWIONY) --- */}
             {me && (
               <div 
                 className="box" 
@@ -128,18 +126,18 @@ export default function Home({ me }) {
                   gap: 12, 
                   cursor: 'pointer',
                   marginBottom: 25, 
-                  border: '1px solid rgba(48, 54, 61, 0.6)', 
+                  border: '1px solid var(--border)',
                   transition: 'all 0.2s ease-in-out',
                   padding: '12px 16px',
-                  background: '#161b22',
+                  background: 'var(--bg-card)', /* ZMIANA */
                   borderRadius: '12px'
                 }}
                 onMouseOver={e => {
-                  e.currentTarget.style.borderColor = '#8b949e';
+                  e.currentTarget.style.borderColor = 'var(--text-muted)';
                   e.currentTarget.style.transform = 'translateY(-1px)';
                 }}
                 onMouseOut={e => {
-                  e.currentTarget.style.borderColor = 'rgba(48, 54, 61, 0.6)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
                   e.currentTarget.style.transform = 'none';
                 }}
               >
@@ -147,21 +145,21 @@ export default function Home({ me }) {
                  <div className="user-avatar small" style={{
                     width: 46, height: 46, fontSize: '0.9rem',
                     flexShrink: 0, 
-                    background: '#21262d',
-                    color: '#e6edf3',
-                    border: '1px solid #30363d',
+                    background: 'var(--bg-hover)', /* ZMIANA */
+                    color: 'var(--text-main)', /* ZMIANA */
+                    border: '1px solid var(--border)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%'
                  }}>
                     {me.username[0].toUpperCase()}
                  </div>
 
-                 {/* Input - ZMIENIONO TEKST */}
+                 {/* Input (fake) */}
                  <div style={{
                     flex: 1, 
-                    color: '#8b949e', 
+                    color: 'var(--text-muted)', /* ZMIANA */
                     fontSize: '0.85rem',
-                    background: '#0d1117', 
-                    border: '1px solid #30363d',
+                    background: 'var(--bg-input)', /* ZMIANA */
+                    border: '1px solid var(--border)',
                     borderRadius: '20px', 
                     padding: '8px 12px',
                     userSelect: 'none'
@@ -169,7 +167,6 @@ export default function Home({ me }) {
                     Podziel się swoimi postępami w optymalizacji...
                  </div>
 
-                 {/* Przycisk */}
                  <button className="btn-primary" style={{
                      padding: '8px 12px',
                      borderRadius: '20px', 
@@ -201,7 +198,7 @@ export default function Home({ me }) {
                   </div>
                 )}
 
-                {/* PRZYCISK POKAŻ WIĘCEJ */}
+                {/* PRZYCISK POKAŻ WIĘCEJ (POPRAWIONY) */}
                 {visibleCount < filteredPosts.length && (
                   <button 
                     onClick={() => setVisibleCount(prev => prev + 10)}
@@ -209,16 +206,16 @@ export default function Home({ me }) {
                       width: '100%', 
                       padding: '12px 0', 
                       marginTop: 15,
-                      background: '#21262d',
-                      border: '1px solid #30363d',
+                      background: 'var(--bg-input)', /* ZMIANA */
+                      border: '1px solid var(--border)',
                       borderRadius: 8,
-                      color: '#c9d1d9',
+                      color: 'var(--text-main)', /* ZMIANA */
                       fontWeight: 600,
                       cursor: 'pointer',
                       transition: 'background 0.2s'
                     }}
-                    onMouseOver={e => e.currentTarget.style.background = '#30363d'}
-                    onMouseOut={e => e.currentTarget.style.background = '#21262d'}
+                    onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseOut={e => e.currentTarget.style.background = 'var(--bg-input)'}
                   >
                     ⬇ Pokaż więcej ({filteredPosts.length - visibleCount})
                   </button>
@@ -234,7 +231,10 @@ export default function Home({ me }) {
                   <div className="user-avatar large">
                     {me.username[0].toUpperCase()}
                   </div>
-                  <strong style={{display:'block', marginBottom:4, fontSize:'1.2rem', color:'#fff'}}>{me.username}</strong>
+                  {/* ZMIANA KOLORU NA ZMIENNĄ */}
+                  <strong style={{display:'block', marginBottom:4, fontSize:'1.2rem', color:'var(--text-main)'}}>
+                    {me.username}
+                  </strong>
                   <div style={{color:'var(--accent)', fontSize:'0.9rem', marginBottom:20}}>{me.email}</div>
                   
                   <button className="btn-secondary btn-round" style={{width:'100%'}} onClick={() => navigate(`/profile/${me.username}`)}>
@@ -243,7 +243,8 @@ export default function Home({ me }) {
                 </div>
             ) : (
                 <div style={{padding:'10px 0'}}>
-                  <h3 style={{fontSize:'1.1rem', color:'#fff'}}>Dołącz do nas</h3>
+                  {/* ZMIANA KOLORU NA ZMIENNĄ */}
+                  <h3 style={{fontSize:'1.1rem', color:'var(--text-main)'}}>Dołącz do nas</h3>
                   <p className="muted" style={{marginBottom:16}}>Zaloguj się, aby śledzić, komentować i dzielić się wiedzą.</p>
                 </div>
             )}
@@ -290,9 +291,9 @@ export default function Home({ me }) {
                                 className="chip" 
                                 onClick={() => toggleComposerTag(t)}
                                 style={isActive ? {
-                                    background: 'rgba(0, 230, 118, 0.15)', 
-                                    borderColor: '#00e676', 
-                                    color: '#00e676'
+                                    background: 'var(--accent-glow)', 
+                                    borderColor: 'var(--accent)', 
+                                    color: 'var(--accent)'
                                 } : {}}
                             >
                                 {isActive ? `✓ ${t}` : `+ ${t}`}

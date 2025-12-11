@@ -41,7 +41,8 @@ export default function ProfileEdit({ user, onClose, onSave }) {
       <div className="modal">
         <h2 style={{marginTop:0}}>Edytuj Profil</h2>
         
-        {error && <div style={{color:'#ff6b6b', marginBottom:15, fontSize:'0.9rem'}}>{error}</div>}
+        {/* POPRAWKA: Użycie zmiennej zamiast sztywnego #ff6b6b */}
+        {error && <div style={{color:'var(--text-danger)', marginBottom:15, fontSize:'0.9rem'}}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
           
@@ -76,10 +77,11 @@ export default function ProfileEdit({ user, onClose, onSave }) {
           </div>
 
           <div style={{display:'flex', gap:10, justifyContent:'flex-end', marginTop:20}}>
-            <button type="button" className="secondary" onClick={onClose} disabled={busy}>
+            {/* POPRAWKA: Dodanie poprawnych klas (btn-secondary, btn-primary) */}
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={busy}>
               Anuluj
             </button>
-            <button type="submit" disabled={busy}>
+            <button type="submit" className="btn-primary" disabled={busy}>
               {busy ? 'Zapisywanie...' : 'Zapisz zmiany'}
             </button>
           </div>

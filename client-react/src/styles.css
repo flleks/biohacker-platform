@@ -17,7 +17,7 @@
   --text-main: #e6edf3;
   --text-muted: #8b949e;
   --text-danger: #ff7b72;
-  --bg-danger: rgba(255, 60, 60, 0.1); /* Tło dla przycisku usuwania */
+  --bg-danger: rgba(255, 60, 60, 0.1);
   
   --radius: 12px;
   --radius-round: 99px;
@@ -25,25 +25,25 @@
   --btn-text: #0b0c10; 
 }
 
-/* --- MOTYW JASNY --- */
+/* --- MOTYW JASNY (Override) --- */
 html.light-mode {
-  --bg-app: #f0f2f5;
-  --bg-card: #ffffff;
-  --bg-input: #f0f2f5; 
-  --bg-hover: #e4e6eb;
+  --bg-app: #f3f4f6;          /* Jasne szare tło */
+  --bg-card: #ffffff;         /* Białe karty */
+  --bg-input: #ffffff;        /* Białe inputy */
+  --bg-hover: #e5e7eb;        /* Szary hover */
   
-  --border: #ced0d4;
+  --border: #d1d5db;          /* Szare ramki */
   
-  --accent: #00a855; 
-  --accent-hover: #008f45;
-  --accent-glow: rgba(0, 168, 85, 0.15);
+  --accent: #10b981;          /* Ciemniejsza zieleń dla kontrastu na białym */
+  --accent-hover: #059669;
+  --accent-glow: rgba(16, 185, 129, 0.15);
   
-  --text-main: #1c1e21;
-  --text-muted: #65676b;
-  --text-danger: #d32f2f;
-  --bg-danger: rgba(255, 0, 0, 0.1); 
+  --text-main: #111827;       /* Prawie czarny tekst */
+  --text-muted: #6b7280;      /* Szary tekst pomocniczy */
+  --text-danger: #ef4444;
+  --bg-danger: rgba(239, 68, 68, 0.1); 
   
-  --btn-text: #ffffff;
+  --btn-text: #ffffff;        /* Biały tekst na zielonym przycisku */
 }
 
 /* --- LOGIKA CZCIONKI --- */
@@ -134,7 +134,6 @@ button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-muted); }
 
-/* --- NOWA KLASA: Naprawia widoczność przycisku usuwania --- */
 .btn-danger { background: var(--bg-danger); color: var(--text-danger); border: 1px solid transparent; }
 .btn-danger:hover { background: var(--text-danger); color: #fff; }
 
@@ -176,6 +175,7 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 30px; 
   width: 100%; max-width: 460px; box-shadow: 0 30px 60px rgba(0,0,0,0.5); 
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+  color: var(--text-main); /* Ważne dla modali */
 }
 @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
