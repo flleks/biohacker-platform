@@ -115,76 +115,33 @@ export default function Home({ me }) {
              </div>
            </section>
 
-            {/* --- PASEK TWORZENIA POSTA (POPRAWIONY) --- */}
+            {/* TRIGGER DODAWANIA POSTA - POPRAWIONY */}
             {me && (
               <div 
-                className="box" 
+                className="composer-trigger"
                 onClick={() => setComposerOpen(true)}
-                style={{
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 12, 
-                  cursor: 'pointer',
-                  marginBottom: 25, 
-                  border: '1px solid var(--border)',
-                  transition: 'all 0.2s ease-in-out',
-                  padding: '12px 16px',
-                  background: 'var(--bg-card)', /* ZMIANA */
-                  borderRadius: '12px'
-                }}
-                onMouseOver={e => {
-                  e.currentTarget.style.borderColor = 'var(--text-muted)';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.transform = 'none';
-                }}
               >
-                 {/* Awatar */}
-                 <div className="user-avatar small" style={{
-                    width: 46, height: 46, fontSize: '0.9rem',
-                    flexShrink: 0, 
-                    background: 'var(--bg-hover)', /* ZMIANA */
-                    color: 'var(--text-main)', /* ZMIANA */
-                    border: '1px solid var(--border)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%'
-                 }}>
+                 {/* Awatar użytkownika (dzięki CSS będzie okrągły i wyśrodkowany) */}
+                 <div className="user-avatar small">
                     {me.username[0].toUpperCase()}
                  </div>
 
-                 {/* Input (fake) */}
-                 <div style={{
-                    flex: 1, 
-                    color: 'var(--text-muted)', /* ZMIANA */
-                    fontSize: '0.85rem',
-                    background: 'var(--bg-input)', /* ZMIANA */
-                    border: '1px solid var(--border)',
-                    borderRadius: '20px', 
-                    padding: '8px 12px',
-                    userSelect: 'none'
-                 }}>
-                    Podziel się swoimi postępami w optymalizacji...
+                 <div className="composer-placeholder">
+                    Podziel się swoimi postępami...
                  </div>
 
-                 <button className="btn-primary" style={{
-                     padding: '8px 12px',
-                     borderRadius: '20px', 
-                     flexShrink: 0,
-                     fontWeight: 600,
-                     fontSize: '0.85rem',
-                     lineHeight: '1.2'
-                 }}>
+                 {/* Przycisk z nową klasą .composer-button */}
+                 <button className="btn-primary composer-button">
                     <span style={{marginRight: 4}}>+</span>Dodaj
                  </button>
               </div>
             )}
 
            {/* LISTA POSTÓW */}
-           <section className="box"> 
-              <h3 className="box-title" style={{marginBottom: 20}}>Posty</h3>
+           <section className="box" style={{paddingBottom: 15}}> 
+              <h3 className="box-title" style={{marginBottom: 15}}>Posty</h3>
 
-              <div style={{display:'flex', flexDirection:'column', gap:20}}>
+              <div className="post-list">
                 {visiblePosts.map(p => (
                   <div key={p._id}>
                      <PostCard post={p} currentUser={me} onUpdate={handlePostUpdate} onDelete={handlePostDelete} />
@@ -198,18 +155,18 @@ export default function Home({ me }) {
                   </div>
                 )}
 
-                {/* PRZYCISK POKAŻ WIĘCEJ (POPRAWIONY) */}
+                {/* PRZYCISK POKAŻ WIĘCEJ */}
                 {visibleCount < filteredPosts.length && (
                   <button 
                     onClick={() => setVisibleCount(prev => prev + 10)}
                     style={{
                       width: '100%', 
                       padding: '12px 0', 
-                      marginTop: 15,
-                      background: 'var(--bg-input)', /* ZMIANA */
+                      marginTop: 5,
+                      background: 'var(--bg-input)', 
                       border: '1px solid var(--border)',
                       borderRadius: 8,
-                      color: 'var(--text-main)', /* ZMIANA */
+                      color: 'var(--text-main)', 
                       fontWeight: 600,
                       cursor: 'pointer',
                       transition: 'background 0.2s'
@@ -231,7 +188,6 @@ export default function Home({ me }) {
                   <div className="user-avatar large">
                     {me.username[0].toUpperCase()}
                   </div>
-                  {/* ZMIANA KOLORU NA ZMIENNĄ */}
                   <strong style={{display:'block', marginBottom:4, fontSize:'1.2rem', color:'var(--text-main)'}}>
                     {me.username}
                   </strong>
@@ -243,7 +199,6 @@ export default function Home({ me }) {
                 </div>
             ) : (
                 <div style={{padding:'10px 0'}}>
-                  {/* ZMIANA KOLORU NA ZMIENNĄ */}
                   <h3 style={{fontSize:'1.1rem', color:'var(--text-main)'}}>Dołącz do nas</h3>
                   <p className="muted" style={{marginBottom:16}}>Zaloguj się, aby śledzić, komentować i dzielić się wiedzą.</p>
                 </div>
@@ -266,7 +221,7 @@ export default function Home({ me }) {
           </div>
         </aside>
 
-        {/* Modal Composera */}
+        {/* Modal Composera (bez zmian) */}
         {composerOpen && (
              <div className="modal-backdrop" onClick={()=>setComposerOpen(false)}>
                <div className="modal" onClick={e=>e.stopPropagation()}>

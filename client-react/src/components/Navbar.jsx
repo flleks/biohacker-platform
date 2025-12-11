@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({ 
   user, onLogout, onOpenLogin,
-  // Te propsy są teraz poprawnie przekazywane z App.jsx
   isDarkMode, toggleTheme,
   isLargeText, toggleTextSize
 }) {
@@ -18,10 +17,10 @@ export default function Navbar({
           <span>Biohacker Platform</span>
         </div>
         
-        <div className="nav-right" style={{display:'flex', alignItems:'center', gap:15}}>
+        <div className="nav-right">
           
-          {/* Sekcja przycisków dostępności */}
-          <div style={{display:'flex', gap: 8, paddingRight: 15, borderRight: '1px solid var(--border)'}}>
+          {/* Sekcja przycisków dostępności (klasa .nav-tools) */}
+          <div className="nav-tools">
             <button 
               className="btn-icon" 
               onClick={toggleTheme}
@@ -54,6 +53,7 @@ export default function Navbar({
                 <div className="user-avatar small">
                   {(user.username || 'U')[0].toUpperCase()}
                 </div>
+                {/* Opcjonalnie można dodać klasę, aby ukrywać nick na bardzo małych ekranach */}
                 <div style={{fontWeight:600, fontSize:'0.9rem', color:'var(--text-main)', paddingRight: 5}}>
                   {user.username}
                 </div>
