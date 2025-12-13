@@ -11,7 +11,6 @@ router.post('/register', async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
     
-    // Walidacja danych
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Wymagane: username, email, password' });
     }
@@ -31,7 +30,16 @@ router.post('/register', async (req, res, next) => {
     const user = await User.create({ username, email, passwordHash });
     
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.status(201).json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    // ZMIANA: dodano avatarUrl
+    return res.status(201).json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email, 
+        avatarUrl: user.avatarUrl 
+      } 
+    });
   } catch (err) {
     next(err);
   }
@@ -49,7 +57,16 @@ router.post('/login', async (req, res, next) => {
     if (!valid) return res.status(401).json({ message: 'Nieprawidłowe dane logowania' });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    // ZMIANA: dodano avatarUrl
+    return res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email, 
+        avatarUrl: user.avatarUrl 
+      } 
+    });
   } catch (err) {
     next(err);
   }
@@ -57,6 +74,7 @@ router.post('/login', async (req, res, next) => {
 
 router.get('/me', auth, async (req, res, next) => {
   try {
+    // Tu select zwraca wszystko oprócz hasła, więc avatarUrl też będzie
     const user = await User.findById(req.user.id).select('-passwordHash');
     return res.json({ user });
   } catch (err) {

@@ -1,6 +1,7 @@
 // client-react/src/components/Navbar.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getBaseUrl } from '../api'; // ZMIANA: import
 
 export default function Navbar({ 
   user, onLogout, onOpenLogin,
@@ -8,6 +9,11 @@ export default function Navbar({
   isLargeText, toggleTextSize
 }) {
   const navigate = useNavigate();
+
+  // ZMIANA: Helper do URL awatara
+  const avatarSrc = user?.avatarUrl 
+    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${getBaseUrl()}${user.avatarUrl}`)
+    : null;
 
   return (
     <div className="navbar">
@@ -19,7 +25,6 @@ export default function Navbar({
         
         <div className="nav-right">
           
-          {/* Sekcja przycisków dostępności (klasa .nav-tools) */}
           <div className="nav-tools">
             <button 
               className="btn-icon" 
@@ -50,10 +55,19 @@ export default function Navbar({
                 onClick={() => navigate(`/profile/${user.username}`)}
                 className="nav-profile-btn"
               >
-                <div className="user-avatar small">
-                  {(user.username || 'U')[0].toUpperCase()}
+                {/* ZMIANA: Logika wyświetlania obrazka w tle */}
+                <div 
+                  className="user-avatar small"
+                  style={{
+                    backgroundImage: avatarSrc ? `url(${avatarSrc})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    color: avatarSrc ? 'transparent' : 'inherit'
+                  }}
+                >
+                  {!avatarSrc && (user.username || 'U')[0].toUpperCase()}
                 </div>
-                {/* Opcjonalnie można dodać klasę, aby ukrywać nick na bardzo małych ekranach */}
+                
                 <div style={{fontWeight:600, fontSize:'0.9rem', color:'var(--text-main)', paddingRight: 5}}>
                   {user.username}
                 </div>

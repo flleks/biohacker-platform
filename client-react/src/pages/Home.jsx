@@ -87,6 +87,11 @@ export default function Home({ me }) {
       .map(([tag, c]) => ({ tag, count: c }));
   }, [posts]);
 
+  // ZMIANA: Helper do wyświetlania awatara
+  const myAvatar = me?.avatarUrl 
+    ? (me.avatarUrl.startsWith('http') ? me.avatarUrl : `${getBaseUrl()}${me.avatarUrl}`)
+    : null;
+
   return (
     <div className="container">
       <div className="layout">
@@ -115,22 +120,29 @@ export default function Home({ me }) {
              </div>
            </section>
 
-            {/* TRIGGER DODAWANIA POSTA - POPRAWIONY */}
+            {/* TRIGGER DODAWANIA POSTA - ZAKTUALIZOWANY */}
             {me && (
               <div 
                 className="composer-trigger"
                 onClick={() => setComposerOpen(true)}
               >
-                 {/* Awatar użytkownika (dzięki CSS będzie okrągły i wyśrodkowany) */}
-                 <div className="user-avatar small">
-                    {me.username[0].toUpperCase()}
+                 {/* ZMIANA: Wyświetlanie awatara w kółku */}
+                 <div 
+                   className="user-avatar small"
+                   style={{
+                     backgroundImage: myAvatar ? `url(${myAvatar})` : 'none',
+                     backgroundSize: 'cover',
+                     backgroundPosition: 'center',
+                     color: myAvatar ? 'transparent' : 'inherit'
+                   }}
+                 >
+                    {!myAvatar && me.username[0].toUpperCase()}
                  </div>
 
                  <div className="composer-placeholder">
                     Podziel się swoimi postępami...
                  </div>
 
-                 {/* Przycisk z nową klasą .composer-button */}
                  <button className="btn-primary composer-button">
                     <span style={{marginRight: 4}}>+</span>Dodaj
                  </button>
@@ -155,7 +167,6 @@ export default function Home({ me }) {
                   </div>
                 )}
 
-                {/* PRZYCISK POKAŻ WIĘCEJ */}
                 {visibleCount < filteredPosts.length && (
                   <button 
                     onClick={() => setVisibleCount(prev => prev + 10)}
@@ -185,9 +196,19 @@ export default function Home({ me }) {
           <div className="box text-center">
             {me ? (
                 <div>
-                  <div className="user-avatar large">
-                    {me.username[0].toUpperCase()}
+                  {/* ZMIANA: Duży awatar w sidebarze */}
+                  <div 
+                    className="user-avatar large"
+                    style={{
+                      backgroundImage: myAvatar ? `url(${myAvatar})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      color: myAvatar ? 'transparent' : 'inherit'
+                    }}
+                  >
+                    {!myAvatar && me.username[0].toUpperCase()}
                   </div>
+
                   <strong style={{display:'block', marginBottom:4, fontSize:'1.2rem', color:'var(--text-main)'}}>
                     {me.username}
                   </strong>
@@ -221,7 +242,7 @@ export default function Home({ me }) {
           </div>
         </aside>
 
-        {/* Modal Composera (bez zmian) */}
+        {/* Modal Composera */}
         {composerOpen && (
              <div className="modal-backdrop" onClick={()=>setComposerOpen(false)}>
                <div className="modal" onClick={e=>e.stopPropagation()}>

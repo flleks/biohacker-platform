@@ -1,7 +1,7 @@
 // client-react/src/components/PostCard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, getBaseUrl } from '../api';
+import { api, getBaseUrl } from '../api'; // ZMIANA: Upewnij się, że getBaseUrl jest zaimportowany
 import EditPost from './EditPost'; 
 
 export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
@@ -38,12 +38,8 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
   }
 
   async function handleDelete() {
-    // ZMIANA: Nowy komunikat w stylu Biohacker zamiast prostego "Usunąć wpis?"
     if (confirm('Czy usunąć ten zapis z dziennika eksperymentów?')) { 
-      try { 
-        await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); 
-        onDelete(post._id); 
-      } catch (e) {} 
+      try { await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); onDelete(post._id); } catch (e) {} 
     }
   }
 
@@ -84,6 +80,11 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
     } catch(e) { alert('Błąd podczas edycji'); } finally { setBusy(false); }
   }
 
+  // ZMIANA: Helper do URL awatara autora
+  const authorAvatar = post.author?.avatarUrl 
+    ? (post.author.avatarUrl.startsWith('http') ? post.author.avatarUrl : `${getBaseUrl()}${post.author.avatarUrl}`)
+    : null;
+
   return (
     <>
       {isEditing && (
@@ -104,12 +105,19 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
 
       <div className="card">
         <div className="post-header">
+          {/* ZMIANA: Wyświetlanie awatara autora */}
           <div 
             className="user-avatar" 
             onClick={() => navigate(`/profile/${post.author?.username}`)}
-            style={{cursor:'pointer'}}
+            style={{
+              cursor:'pointer',
+              backgroundImage: authorAvatar ? `url(${authorAvatar})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              color: authorAvatar ? 'transparent' : 'inherit'
+            }}
           >
-            {post.author?.username ? post.author.username[0].toUpperCase() : '?'}
+            {!authorAvatar && (post.author?.username ? post.author.username[0].toUpperCase() : '?')}
           </div>
           
           <div className="user-info">
@@ -131,7 +139,6 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
           </div>
         </div>
 
-        {/* Użycie zmiennych CSS dla koloru tekstu */}
         <div style={{color:'var(--text-main)', fontSize:'1rem', whiteSpace:'pre-wrap', lineHeight:'1.6', marginBottom:12}}>
             {post.content}
         </div>

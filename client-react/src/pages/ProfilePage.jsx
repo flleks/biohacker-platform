@@ -1,7 +1,7 @@
 // client-react/src/pages/ProfilePage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../api';
+import { api, getBaseUrl } from '../api'; // ZMIANA: import
 import PostCard from '../components/PostCard';
 import ProfileEdit from '../components/ProfileEdit';
 
@@ -46,6 +46,11 @@ export default function ProfilePage({ me, onUpdateMe }) {
   const isMe = me && me.username === profileUser.username;
   const visiblePosts = posts.slice(0, visibleCount);
 
+  // ZMIANA: Helper do URL
+  const profileAvatar = profileUser?.avatarUrl 
+    ? (profileUser.avatarUrl.startsWith('http') ? profileUser.avatarUrl : `${getBaseUrl()}${profileUser.avatarUrl}`)
+    : null;
+
   return (
     <div className="container">
       <div className="layout">
@@ -55,9 +60,19 @@ export default function ProfilePage({ me, onUpdateMe }) {
         <div className="main-column">
           
           <div className="card" style={{textAlign:'center', padding:40, position:'relative', marginBottom: 30}}>
-             <div className="user-avatar large">
-               {profileUser.username[0].toUpperCase()}
+             {/* ZMIANA: Duży awatar z tłem */}
+             <div 
+               className="user-avatar large"
+               style={{
+                 backgroundImage: profileAvatar ? `url(${profileAvatar})` : 'none',
+                 backgroundSize: 'cover',
+                 backgroundPosition: 'center',
+                 color: profileAvatar ? 'transparent' : 'inherit'
+               }}
+             >
+               {!profileAvatar && profileUser.username[0].toUpperCase()}
              </div>
+
              <h1 style={{margin:0, fontSize:'2rem'}}>{profileUser.username}</h1>
              <p className="muted" style={{marginTop:8, fontSize:'1rem'}}>{profileUser.bio || "Brak opisu biohackera."}</p>
              
@@ -80,7 +95,6 @@ export default function ProfilePage({ me, onUpdateMe }) {
             />
           )}
 
-          {/* POPRAWKA: Zamiana sztywnych kolorów na zmienne var(--) */}
           <div style={{ padding: 15, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border)' }}>
             
             <div style={{marginBottom: 20, paddingLeft: 10, borderLeft: '4px solid var(--accent)'}}>
@@ -111,10 +125,10 @@ export default function ProfilePage({ me, onUpdateMe }) {
                       width: '100%', 
                       padding: '12px 0', 
                       marginTop: 15,
-                      background: 'var(--bg-input)', // Poprawiony kolor
+                      background: 'var(--bg-input)', 
                       border: '1px solid var(--border)',
                       borderRadius: 8,
-                      color: 'var(--text-main)', // Poprawiony kolor
+                      color: 'var(--text-main)', 
                       fontWeight: 600,
                       cursor: 'pointer',
                       transition: 'background 0.2s'
@@ -129,8 +143,6 @@ export default function ProfilePage({ me, onUpdateMe }) {
           </div>
 
         </div>
-
-        
 
       </div>
     </div>
