@@ -3,33 +3,27 @@ import { useNavigate } from 'react-router-dom';
 import { api, getBaseUrl } from '../api';
 import EditPost from './EditPost'; 
 
-// Dodajemy prop isDetailView (domyślnie false)
 export default function PostCard({ post, currentUser, onUpdate, onDelete, isDetailView = false }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  // Jeśli jesteśmy w widoku szczegółowym, możemy chcieć od razu otworzyć komentarze (opcjonalne)
   const [commentsExpanded, setCommentsExpanded] = useState(isDetailView); 
   const [comments, setComments] = useState([]); 
   const [newComment, setNewComment] = useState('');
   const [commentsCount, setCommentsCount] = useState(post.comments ? post.comments.length : 0);
   const [busy, setBusy] = useState(false);
 
-  const BASIC_TAGS = ['sleep','supplements','fitness','nootropics','diet'];
-
   useEffect(() => {
     setCommentsCount(post.comments ? post.comments.length : 0);
   }, [post.comments]);
 
-  // Automatyczne ładowanie komentarzy w widoku szczegółowym
   useEffect(() => {
     if (isDetailView) {
       loadComments();
     }
-  }, [isDetailView]);
+  }, [isDetailView, post._id]);
 
   const isLiked = post.likes && currentUser && post.likes.includes(currentUser._id);
   const isOwner = currentUser && (currentUser._id === post.author?._id);
-
   const isExperiment = post.type === 'experiment';
 
   function timeAgo(iso) {
@@ -43,24 +37,33 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
     return `${Math.floor(h / 24)}d`;
   }
 
-  // Funkcja nawigująca do szczegółów
-  const goToDetail = () => {
-    if (!isDetailView) {
-      navigate(`/posts/${post._id}`);
-    }
+  // --- NAWIGACJA ---
+  const handleCardClick = (e) => {
+    // Jeśli to widok szczegółowy lub zaznaczamy tekst -> nie rób nic
+    if (isDetailView || window.getSelection().toString().length > 0) return;
+    navigate(`/posts/${post._id}`);
   };
 
-  async function handleLike() {
+  const stopProp = (e) => {
+    e && e.stopPropagation();
+  };
+
+  // --- AKCJE ---
+
+  async function handleLike(e) {
+    stopProp(e);
     try { await api(`/api/posts/${post._id}/like`, { method: 'POST', auth: true }); onUpdate(); } catch (e) {}
   }
 
-  async function handleDelete() {
+  async function handleDelete(e) {
+    stopProp(e);
     if (confirm('Czy usunąć ten wpis?')) { 
       try { await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); onDelete(post._id); } catch (e) {} 
     }
   }
 
-  async function toggleComments() {
+  async function toggleComments(e) {
+    stopProp(e);
     if (!commentsExpanded) loadComments();
     setCommentsExpanded(!commentsExpanded);
   }
@@ -69,7 +72,8 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
     try { const out = await api(`/api/posts/${post._id}/comments`); setComments(out.comments || []); } catch (e) {}
   }
 
-  async function handleAddComment() {
+  async function handleAddComment(e) {
+    if (e && e.stopPropagation) stopProp(e);
     if (!newComment.trim()) return;
     setBusy(true);
     try { 
@@ -88,18 +92,13 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
       fd.append('content', content); 
       fd.append('tags', JSON.stringify(tagsArray)); 
       if(imageFile) fd.append('image', imageFile);
-
-      if (experimentDetails) {
-         fd.append('experimentDetails', JSON.stringify(experimentDetails));
-      }
+      if (experimentDetails) fd.append('experimentDetails', JSON.stringify(experimentDetails));
       
       const token = localStorage.getItem('token');
+      // Bezpośredni fetch dla FormData
       const res = await fetch(`${getBaseUrl()}/api/posts/${post._id}`, { 
-        method: 'PUT', 
-        headers: token ? {Authorization:`Bearer ${token}`} : {}, 
-        body: fd 
+        method: 'PUT', headers: token ? {Authorization:`Bearer ${token}`} : {}, body: fd 
       });
-      
       if(!res.ok) throw new Error(); 
       setIsEditing(false); 
       onUpdate(); 
@@ -116,13 +115,13 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
     <>
       {isEditing && (
         <div className="modal-backdrop" onClick={() => setIsEditing(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{boxShadow:'none'}}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{boxShadow:'none', cursor:'default'}}>
             <EditPost 
                 post={post}
                 initialContent={post.content} 
                 initialTags={(post.tags||[]).join(',')} 
                 initialImage={post.imageUrl ? (post.imageUrl.startsWith('http')?post.imageUrl:`${getBaseUrl()}${post.imageUrl}`) : null} 
-                basicTags={BASIC_TAGS}
+                basicTags={['sleep','supplements','fitness','nootropics','diet']}
                 onCancel={()=>setIsEditing(false)} 
                 onSave={handleSaveEdit} 
                 busy={busy}
@@ -131,11 +130,19 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
         </div>
       )}
 
-      <div className={cardClass}>
+      {/* GŁÓWNY KONTENER - TERAZ KLIKALNY */}
+      <div 
+        className={cardClass} 
+        onClick={handleCardClick}
+        style={{ 
+            cursor: isDetailView ? 'default' : 'pointer',
+            transition: 'background-color 0.1s' 
+        }}
+      >
         <div className="post-header">
           <div 
             className="user-avatar" 
-            onClick={() => navigate(`/profile/${post.author?.username}`)}
+            onClick={(e) => { stopProp(e); navigate(`/profile/${post.author?.username}`); }}
             style={{
               cursor:'pointer',
               backgroundImage: authorAvatar ? `url(${authorAvatar})` : 'none',
@@ -151,7 +158,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
             <div style={{display:'flex', justifyContent:'space-between', width:'100%', alignItems:'center'}}>
               <div>
                 <strong 
-                  onClick={() => navigate(`/profile/${post.author?.username}`)}
+                  onClick={(e) => { stopProp(e); navigate(`/profile/${post.author?.username}`); }}
                   style={{cursor:'pointer', color:'var(--text-main)', marginRight: 8, fontSize:'1.05rem'}}
                 >
                   {post.author?.username}
@@ -159,6 +166,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
                 <span className="muted">{timeAgo(post.createdAt)}</span>
               </div>
               
+              {/* Tylko usuwanie w nagłówku */}
               {isOwner && (
                 <button onClick={handleDelete} className="btn-danger" style={{padding:'4px 8px', fontSize:'0.75rem', height:'auto'}}>Usuń</button>
               )}
@@ -183,7 +191,6 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
                         {post.experimentDetails.status === 'planned' && '📅 Planowany'}
                     </span>
                 </div>
-
                 <div><strong>Protokół</strong> {post.experimentDetails.title || '-'}</div>
                 <div><strong>Cel</strong> {post.experimentDetails.goal || '-'}</div>
                 <div style={{gridColumn: '1 / -1'}}><strong>Czas</strong> {post.experimentDetails.duration || '-'}</div>
@@ -191,34 +198,15 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
           </div>
         )}
 
-        {/* TREŚĆ POSTA - TERAZ KLIKALNA */}
-        <div 
-            onClick={goToDetail}
-            style={{
-                color:'var(--text-main)', 
-                fontSize:'1rem', 
-                whiteSpace:'pre-wrap', 
-                lineHeight:'1.6', 
-                marginBottom:12,
-                cursor: isDetailView ? 'default' : 'pointer' // Kursor łapki, jeśli to nie widok szczegółowy
-            }}
-        >
+        <div style={{color:'var(--text-main)', fontSize:'1rem', whiteSpace:'pre-wrap', lineHeight:'1.6', marginBottom:12}}>
             {post.content}
         </div>
 
-        {/* ZDJĘCIE - TERAZ KLIKALNE */}
         {post.imageUrl && (
             <img 
             src={post.imageUrl.startsWith('http') ? post.imageUrl : `${getBaseUrl()}${post.imageUrl}`} 
             alt="post" 
-            onClick={goToDetail}
-            style={{
-                width:'100%', 
-                borderRadius:8, 
-                marginBottom:12, 
-                border:'1px solid var(--border)',
-                cursor: isDetailView ? 'default' : 'pointer'
-            }}
+            style={{width:'100%', borderRadius:8, marginBottom:12, border:'1px solid var(--border)'}}
             />
         )}
 
@@ -228,7 +216,9 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
             ))}
         </div>
 
-        <div style={{ paddingTop: 12, borderTop:'1px solid var(--border)', display:'flex', gap: 20 }}>
+        {/* STOPKA Z PRZYCISKAMI */}
+        <div style={{ paddingTop: 12, borderTop:'1px solid var(--border)', display:'flex', alignItems:'center', gap: 20 }}>
+          
           <button onClick={handleLike} style={{background:'transparent', padding:0, color: isLiked?'#ef4444':'var(--text-muted)'}}>
             {isLiked ? '❤️' : '🤍'} {post.likes?.length || 0}
           </button>
@@ -236,10 +226,16 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
           <button onClick={toggleComments} style={{background:'transparent', padding:0, color:'var(--text-muted)'}}>
             💬 {commentsExpanded ? 'Ukryj' : 'Komentarze'} <span style={{opacity: 0.8}}>{commentsCount}</span>
           </button>
-          
+
+          {/* LICZNIK WYŚWIETLEŃ */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.9rem', cursor: 'default' }}>
+             👁️ <span style={{opacity: 0.8}}>{post.views || 0}</span>
+          </div>
+
+          {/* PRZYCISK EDYCJI */}
           {isOwner && (
               <button 
-                  onClick={()=>setIsEditing(true)} 
+                  onClick={(e) => { stopProp(e); setIsEditing(true); }} 
                   style={{background:'transparent', padding:0, color:'#f59e0b', marginLeft:'auto'}}
               >
                   ✏️ Edytuj
@@ -248,11 +244,16 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete, isDeta
         </div>
 
         {commentsExpanded && (
-          <div style={{marginTop:15, padding:15, background:'var(--bg-input)', borderRadius:8}}>
+          <div style={{marginTop:15, padding:15, background:'var(--bg-input)', borderRadius:8}} onClick={stopProp}>
             {currentUser && (
               <div style={{display:'flex', gap:10, marginBottom:15}}>
-                <input value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Napisz komentarz..." onKeyDown={e=>e.key==='Enter'&&handleAddComment()} />
-                <button onClick={handleAddComment} disabled={busy} className="btn-secondary" style={{padding: '0 15px'}}>Dodaj</button>
+                <input 
+                    value={newComment} 
+                    onChange={e=>setNewComment(e.target.value)} 
+                    placeholder="Napisz komentarz..." 
+                    onKeyDown={e=>e.key==='Enter'&&handleAddComment(e)} 
+                />
+                <button onClick={(e) => handleAddComment(e)} disabled={busy} className="btn-secondary" style={{padding: '0 15px'}}>Dodaj</button>
               </div>
             )}
             <div style={{display:'flex', flexDirection:'column', gap:10}}>

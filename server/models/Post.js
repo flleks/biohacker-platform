@@ -11,47 +11,49 @@ const PostSchema = new mongoose.Schema({
     required: true 
   },
   tags: [String],
-  
-  // Obsługa obrazków
   imageUrl: String,
   imageMeta: {
     width: Number,
     height: Number,
     size: Number
   },
+  
+  // --- NOWE POLE: LICZNIK WYŚWIETLEŃ ---
+  views: {
+    type: Number,
+    default: 0
+  },
+  // -------------------------------------
 
-  // System polubień
   likes: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User' 
   }],
 
-  // System komentarzy
   comments: [{
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     text: String,
     createdAt: { type: Date, default: Date.now }
   }],
 
-  // --- BIOHACKING: Nowe pola dla eksperymentów ---
+  // --- POLA DLA BIOHACKINGU ---
   type: { 
     type: String, 
-    enum: ['normal', 'experiment'], // Rozróżniamy zwykły post od eksperymentu
+    enum: ['normal', 'experiment'], 
     default: 'normal' 
   },
   
   experimentDetails: {
-    title: String,      // np. "Protokół Wim Hofa - Tydzień 1"
-    goal: String,       // np. "Zwiększenie odporności na zimno"
-    duration: String,   // np. "30 dni"
-    status: {           // Status widoczny na zielonej ramce
+    title: String,
+    goal: String,
+    duration: String,
+    status: { 
       type: String, 
       enum: ['planned', 'active', 'completed', 'failed'],
       default: 'active'
     },
-    results: String     // Miejsce na podsumowanie wyników
+    results: String
   }
-  // ----------------------------------------------
 
 }, { timestamps: true });
 
