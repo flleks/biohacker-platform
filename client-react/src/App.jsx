@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import AuthModal from './components/AuthModal';
 import Home from './pages/Home';
 import ProfilePage from './pages/ProfilePage';
+import PostPage from './pages/PostPage'; // <--- 1. IMPORTUJEMY NOWĄ STRONĘ
 import Footer from './components/Footer';
 
 import { api, getToken, setToken } from './api';
@@ -110,7 +111,13 @@ export default function App() {
               path="/" 
               element={<Home me={me} {...themeProps} />} 
             />
-            {/* ZMIANA: Przekazujemy onUpdateMe, aby ProfilePage mógł odświeżyć stan 'me' w App */}
+            
+            {/* <--- 2. DODAJEMY TRASĘ DLA POJEDYNCZEGO POSTA */}
+            <Route 
+              path="/posts/:id" 
+              element={<PostPage me={me} {...themeProps} />} 
+            />
+
             <Route 
               path="/profile/:username" 
               element={<ProfilePage me={me} onUpdateMe={loadMe} {...themeProps} />} 

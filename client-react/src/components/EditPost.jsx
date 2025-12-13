@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 export default function EditPost({
+  post, // POTRZEBNE: Przekazujemy cały obiekt posta, by sprawdzić czy to eksperyment
   initialContent = '',
   initialTags = '',
   initialImage = null,
@@ -15,6 +16,13 @@ export default function EditPost({
   const [imageFile, setImageFile] = useState(null);       
   const [preview, setPreview] = useState(initialImage);
   const [submitting, setSubmitting] = useState(false);
+
+  // --- LOGIKA EKSPERYMENTU ---
+  const isExperiment = post?.type === 'experiment';
+  const [expTitle, setExpTitle] = useState(post?.experimentDetails?.title || '');
+  const [expGoal, setExpGoal] = useState(post?.experimentDetails?.goal || '');
+  const [expDuration, setExpDuration] = useState(post?.experimentDetails?.duration || '');
+  const [expStatus, setExpStatus] = useState(post?.experimentDetails?.status || 'active');
 
   useEffect(() => setContent(initialContent ?? ''), [initialContent]);
   useEffect(() => setTags(initialTags ?? ''), [initialTags]);
@@ -45,17 +53,14 @@ export default function EditPost({
 
   function handleImageChange(e) {
     const file = e.target.files?.[0] ?? null;
-    
     if (preview && preview.startsWith('blob:')) {
       try { URL.revokeObjectURL(preview); } catch (e) {}
     }
-
     if (!file) {
       setImageFile(null);
       setPreview(initialImage ?? null);
       return;
     }
-
     setImageFile(file);
     const url = URL.createObjectURL(file);
     setPreview(url);
@@ -66,17 +71,127 @@ export default function EditPost({
     setSubmitting(true);
     try {
       const cleaned = parsedTags.map(t => t.trim()).filter(Boolean);
-      await onSave(content, cleaned, imageFile);
+      
+      // Pakujemy dane eksperymentu (tylko jeśli to eksperyment)
+      let experimentPayload = null;
+      if (isExperiment) {
+        experimentPayload = {
+          title: expTitle,
+          goal: expGoal,
+          duration: expDuration,
+          status: expStatus
+        };
+      }
+
+      // Przekazujemy 4 argumenty do onSave w PostCard
+      await onSave(content, cleaned, imageFile, experimentPayload);
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    // POPRAWKA: Usunięto padding, background i border - dziedziczy styl z modala
     <div style={{ width: '100%' }}>
-      <h3 style={{marginBottom: 20, marginTop: 0, color: 'var(--text-main)'}}>Edycja posta</h3>
+      <h3 style={{marginBottom: 20, marginTop: 0, color: 'var(--text-main)'}}>
+        {isExperiment ? 'Edycja Eksperymentu' : 'Edycja Posta'}
+      </h3>
       
+      {/* --- CZYTELNA SEKCJA EDYCJI EKSPERYMENTU --- */}
+      {isExperiment && (
+        <div style={{
+          backgroundColor: 'rgba(16, 185, 129, 0.08)', // Delikatna zieleń
+          border: '1px solid var(--accent)', 
+          borderRadius: 12, 
+          padding: 16, 
+          marginBottom: 20
+        }}>
+          <h4 style={{
+            margin: '0 0 16px 0', 
+            color: 'var(--accent)', 
+            fontSize: '0.85rem', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em',
+            borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
+            paddingBottom: 8
+          }}>
+            🧪 Parametry Badania
+          </h4>
+
+          {/* 1. STATUS */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, color: 'var(--text-main)' }}>
+              Status eksperymentu
+            </label>
+            <select
+              value={expStatus}
+              onChange={e => setExpStatus(e.target.value)}
+              disabled={busy || submitting}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-input)',
+                color: 'var(--text-main)',
+                fontWeight: 500,
+                cursor: 'pointer'
+              }}
+            >
+              <option value="active">🟢 W trakcie (Active)</option>
+              <option value="completed">🏁 Zakończony (Completed)</option>
+              <option value="planned">📅 Planowany (Planned)</option>
+              <option value="failed">❌ Przerwany (Failed)</option>
+            </select>
+          </div>
+
+          {/* 2. TYTUŁ I CZAS (W jednym rzędzie na desktopie) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 12 }}>
+             <div>
+               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, color: 'var(--text-main)' }}>
+                 Protokół (Co badasz?)
+               </label>
+               <input 
+                 value={expTitle} 
+                 onChange={e => setExpTitle(e.target.value)}
+                 disabled={busy || submitting}
+                 placeholder="np. Zimne prysznice"
+                 style={{ width: '100%' }}
+               />
+             </div>
+             <div>
+               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, color: 'var(--text-main)' }}>
+                 Czas trwania
+               </label>
+               <input 
+                 value={expDuration} 
+                 onChange={e => setExpDuration(e.target.value)}
+                 disabled={busy || submitting}
+                 placeholder="np. 30 dni"
+                 style={{ width: '100%' }}
+               />
+             </div>
+          </div>
+
+          {/* 3. CEL */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, color: 'var(--text-main)' }}>
+              Cel (Hipoteza)
+            </label>
+            <input 
+              value={expGoal} 
+              onChange={e => setExpGoal(e.target.value)}
+              disabled={busy || submitting}
+              placeholder="np. Zwiększenie odporności, lepszy sen"
+              style={{ width: '100%' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* --- STANDARDOWA EDYCJA TREŚCI --- */}
+      <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6, color: 'var(--text-muted)' }}>
+        Notatka / Opis postępów
+      </label>
       <textarea 
         value={content}
         onChange={e => setContent(e.target.value)}

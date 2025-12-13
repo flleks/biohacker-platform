@@ -1,4 +1,3 @@
-// client-react/src/pages/Home.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, getBaseUrl, getToken } from '../api';
@@ -10,13 +9,21 @@ export default function Home({ me }) {
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  
   const [visibleCount, setVisibleCount] = useState(10);
 
+  // --- STANY FORMULARZA ---
   const [postContent, setPostContent] = useState('');
   const [postTags, setPostTags] = useState('');
   const [postImageFile, setPostImageFile] = useState(null);
   const [postImagePreview, setPostImagePreview] = useState(null);
+
+  // --- NOWE STANY: EKSPERYMENT ---
+  const [postType, setPostType] = useState('normal'); 
+  const [expTitle, setExpTitle] = useState('');
+  const [expGoal, setExpGoal] = useState('');
+  const [expDuration, setExpDuration] = useState('');
+  const [expStatus, setExpStatus] = useState('active'); // Domyślny status
+  // ------------------------------
 
   const BASIC_TAGS = ['sleep','supplements','fitness','nootropics','diet'];
 
@@ -53,12 +60,32 @@ export default function Home({ me }) {
       fd.append('tags', JSON.stringify(tags));
       if (postImageFile) fd.append('image', postImageFile);
 
+      // --- WYSYŁANIE DANYCH EKSPERYMENTU ---
+      fd.append('type', postType);
+      if (postType === 'experiment') {
+        const details = {
+            title: expTitle,
+            goal: expGoal,
+            duration: expDuration,
+            status: expStatus // Wysyłamy wybrany status
+        };
+        fd.append('experimentDetails', JSON.stringify(details));
+      }
+
       const token = getToken();
       await fetch(`${getBaseUrl()}/api/posts`, { method: 'POST', headers: token ? {Authorization:`Bearer ${token}`} : {}, body: fd });
       
+      // RESET FORMULARZA
       setPostContent(''); setPostTags(''); 
       if (postImagePreview) URL.revokeObjectURL(postImagePreview);
       setPostImageFile(null); setPostImagePreview(null);
+      
+      setPostType('normal');
+      setExpTitle('');
+      setExpGoal('');
+      setExpDuration('');
+      setExpStatus('active');
+
       setComposerOpen(false);
       
       await loadPosts();
@@ -87,7 +114,6 @@ export default function Home({ me }) {
       .map(([tag, c]) => ({ tag, count: c }));
   }, [posts]);
 
-  // ZMIANA: Helper do wyświetlania awatara
   const myAvatar = me?.avatarUrl 
     ? (me.avatarUrl.startsWith('http') ? me.avatarUrl : `${getBaseUrl()}${me.avatarUrl}`)
     : null;
@@ -95,12 +121,9 @@ export default function Home({ me }) {
   return (
     <div className="container">
       <div className="layout">
-        
         <div className="layout-left-spacer"></div>
 
         <div className="main-column">
-           
-           {/* WYSZUKIWARKA */}
            <section className="box">
              <h3 className="box-title">Wyszukaj</h3>
              <div className="row">
@@ -113,46 +136,28 @@ export default function Home({ me }) {
                   />
                 </div>
                 {search && (
-                  <button className="btn-secondary btn-icon" onClick={()=>setSearch('')}>
-                    ✕
-                  </button>
+                  <button className="btn-secondary btn-icon" onClick={()=>setSearch('')}>✕</button>
                 )}
              </div>
            </section>
 
-            {/* TRIGGER DODAWANIA POSTA - ZAKTUALIZOWANY */}
             {me && (
-              <div 
-                className="composer-trigger"
-                onClick={() => setComposerOpen(true)}
-              >
-                 {/* ZMIANA: Wyświetlanie awatara w kółku */}
-                 <div 
-                   className="user-avatar small"
-                   style={{
+              <div className="composer-trigger" onClick={() => setComposerOpen(true)}>
+                 <div className="user-avatar small" style={{
                      backgroundImage: myAvatar ? `url(${myAvatar})` : 'none',
                      backgroundSize: 'cover',
                      backgroundPosition: 'center',
                      color: myAvatar ? 'transparent' : 'inherit'
-                   }}
-                 >
+                   }}>
                     {!myAvatar && me.username[0].toUpperCase()}
                  </div>
-
-                 <div className="composer-placeholder">
-                    Podziel się swoimi postępami...
-                 </div>
-
-                 <button className="btn-primary composer-button">
-                    <span style={{marginRight: 4}}>+</span>Dodaj
-                 </button>
+                 <div className="composer-placeholder">Podziel się swoimi postępami...</div>
+                 <button className="btn-primary composer-button"><span style={{marginRight: 4}}>+</span>Dodaj</button>
               </div>
             )}
 
-           {/* LISTA POSTÓW */}
            <section className="box" style={{paddingBottom: 15}}> 
               <h3 className="box-title" style={{marginBottom: 15}}>Posty</h3>
-
               <div className="post-list">
                 {visiblePosts.map(p => (
                   <div key={p._id}>
@@ -171,16 +176,10 @@ export default function Home({ me }) {
                   <button 
                     onClick={() => setVisibleCount(prev => prev + 10)}
                     style={{
-                      width: '100%', 
-                      padding: '12px 0', 
-                      marginTop: 5,
-                      background: 'var(--bg-input)', 
-                      border: '1px solid var(--border)',
-                      borderRadius: 8,
-                      color: 'var(--text-main)', 
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'background 0.2s'
+                      width: '100%', padding: '12px 0', marginTop: 5,
+                      background: 'var(--bg-input)', border: '1px solid var(--border)',
+                      borderRadius: 8, color: 'var(--text-main)', fontWeight: 600,
+                      cursor: 'pointer', transition: 'background 0.2s'
                     }}
                     onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                     onMouseOut={e => e.currentTarget.style.background = 'var(--bg-input)'}
@@ -196,24 +195,17 @@ export default function Home({ me }) {
           <div className="box text-center">
             {me ? (
                 <div>
-                  {/* ZMIANA: Duży awatar w sidebarze */}
-                  <div 
-                    className="user-avatar large"
-                    style={{
+                  <div className="user-avatar large" style={{
                       backgroundImage: myAvatar ? `url(${myAvatar})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
+                      backgroundSize: 'cover', backgroundPosition: 'center',
                       color: myAvatar ? 'transparent' : 'inherit'
-                    }}
-                  >
+                    }}>
                     {!myAvatar && me.username[0].toUpperCase()}
                   </div>
-
                   <strong style={{display:'block', marginBottom:4, fontSize:'1.2rem', color:'var(--text-main)'}}>
                     {me.username}
                   </strong>
                   <div style={{color:'var(--accent)', fontSize:'0.9rem', marginBottom:20}}>{me.email}</div>
-                  
                   <button className="btn-secondary btn-round" style={{width:'100%'}} onClick={() => navigate(`/profile/${me.username}`)}>
                     Mój profil
                   </button>
@@ -230,11 +222,7 @@ export default function Home({ me }) {
             <h3 className="box-title">Popularne Tagi</h3>
             <div style={{display:'flex', flexWrap:'wrap', gap:8}}>
               {trendingTags.length > 0 ? trendingTags.map(t => (
-                <button 
-                  key={t.tag} 
-                  className={`chip ${search === t.tag ? 'active' : ''}`}
-                  onClick={()=>setSearch(t.tag)}
-                >
+                <button key={t.tag} className={`chip ${search === t.tag ? 'active' : ''}`} onClick={()=>setSearch(t.tag)}>
                   #{t.tag} <span style={{opacity:0.6, marginLeft:4}}>({t.count})</span>
                 </button>
               )) : <span className="muted">Brak danych</span>}
@@ -242,16 +230,46 @@ export default function Home({ me }) {
           </div>
         </aside>
 
-        {/* Modal Composera */}
+        {/* MODAL DODAWANIA POSTA */}
         {composerOpen && (
              <div className="modal-backdrop" onClick={()=>setComposerOpen(false)}>
                <div className="modal" onClick={e=>e.stopPropagation()}>
-                  <h3 style={{marginBottom:20, marginTop:0}}>Nowy biohack</h3>
+                  <h3 style={{marginBottom:20, marginTop:0}}>Nowy wpis</h3>
+
+                  <div className="post-type-selector">
+                      <button type="button" onClick={() => setPostType('normal')} className={`type-btn ${postType === 'normal' ? 'active' : ''}`}>
+                        📝 Zwykły Post
+                      </button>
+                      <button type="button" onClick={() => setPostType('experiment')} className={`type-btn ${postType === 'experiment' ? 'active-exp' : ''}`}>
+                        🧪 Eksperyment
+                      </button>
+                  </div>
+
+                  {postType === 'experiment' && (
+                    <div className="experiment-inputs">
+                        {/* WYBÓR STATUSU */}
+                        <select 
+                            value={expStatus}
+                            onChange={e => setExpStatus(e.target.value)}
+                            style={{gridColumn: '1 / -1', padding: 10, borderRadius: 8, border: '1px solid #ddd', marginBottom: 5}}
+                        >
+                            <option value="active">🟢 Startuję teraz (Active)</option>
+                            <option value="planned">📅 Dopiero planuję (Planned)</option>
+                            <option value="completed">🏁 Już zakończyłem (Completed)</option>
+                        </select>
+
+                        <input placeholder="Nazwa protokołu (np. Zimne prysznice)" value={expTitle} onChange={e => setExpTitle(e.target.value)} style={{gridColumn: '1 / -1'}} />
+                        <input placeholder="Cel (np. Odporność)" value={expGoal} onChange={e => setExpGoal(e.target.value)} />
+                        <input placeholder="Czas (np. 30 dni)" value={expDuration} onChange={e => setExpDuration(e.target.value)} />
+                    </div>
+                  )}
+
                   <textarea 
                     value={postContent} onChange={e=>setPostContent(e.target.value)} 
-                    placeholder="Opisz swoje odkrycie..." autoFocus 
-                    style={{minHeight:140, marginBottom:16}}
+                    placeholder={postType === 'experiment' ? "Opisz metodologię i swoje oczekiwania..." : "Opisz swoje odkrycie..."}
+                    autoFocus style={{minHeight:140, marginBottom:16}}
                   />
+
                   <div className="field">
                     <span>Tagi</span>
                     <input value={postTags} onChange={e=>setPostTags(e.target.value)} placeholder="np. sleep, diet, nootropics" />
@@ -261,17 +279,8 @@ export default function Home({ me }) {
                       {BASIC_TAGS.map(t => {
                           const isActive = activeComposerTags.includes(t);
                           return (
-                            <button 
-                                key={t} 
-                                type="button" 
-                                className="chip" 
-                                onClick={() => toggleComposerTag(t)}
-                                style={isActive ? {
-                                    background: 'var(--accent-glow)', 
-                                    borderColor: 'var(--accent)', 
-                                    color: 'var(--accent)'
-                                } : {}}
-                            >
+                            <button key={t} type="button" className="chip" onClick={() => toggleComposerTag(t)}
+                                style={isActive ? {background: 'var(--accent-glow)', borderColor: 'var(--accent)', color: 'var(--accent)'} : {}}>
                                 {isActive ? `✓ ${t}` : `+ ${t}`}
                             </button>
                           );
@@ -290,12 +299,13 @@ export default function Home({ me }) {
                   
                   <div style={{marginTop:24, display:'flex', justifyContent:'flex-end', gap:12}}>
                     <button className="btn-secondary" onClick={()=>setComposerOpen(false)}>Anuluj</button>
-                    <button className="btn-primary" onClick={createPost} disabled={busy}>Opublikuj</button>
+                    <button className="btn-primary" onClick={createPost} disabled={busy} style={postType === 'experiment' ? { background: 'var(--accent)', color: '#000' } : {}}>
+                        {postType === 'experiment' ? 'Rozpocznij' : 'Opublikuj'}
+                    </button>
                   </div>
                </div>
              </div>
         )}
-
       </div>
     </div>
   );

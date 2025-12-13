@@ -1,13 +1,14 @@
-// client-react/src/components/PostCard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, getBaseUrl } from '../api'; // ZMIANA: Upewnij się, że getBaseUrl jest zaimportowany
+import { api, getBaseUrl } from '../api';
 import EditPost from './EditPost'; 
 
-export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
+// Dodajemy prop isDetailView (domyślnie false)
+export default function PostCard({ post, currentUser, onUpdate, onDelete, isDetailView = false }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  // Jeśli jesteśmy w widoku szczegółowym, możemy chcieć od razu otworzyć komentarze (opcjonalne)
+  const [commentsExpanded, setCommentsExpanded] = useState(isDetailView); 
   const [comments, setComments] = useState([]); 
   const [newComment, setNewComment] = useState('');
   const [commentsCount, setCommentsCount] = useState(post.comments ? post.comments.length : 0);
@@ -19,8 +20,17 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
     setCommentsCount(post.comments ? post.comments.length : 0);
   }, [post.comments]);
 
+  // Automatyczne ładowanie komentarzy w widoku szczegółowym
+  useEffect(() => {
+    if (isDetailView) {
+      loadComments();
+    }
+  }, [isDetailView]);
+
   const isLiked = post.likes && currentUser && post.likes.includes(currentUser._id);
   const isOwner = currentUser && (currentUser._id === post.author?._id);
+
+  const isExperiment = post.type === 'experiment';
 
   function timeAgo(iso) {
     if (!iso) return '';
@@ -33,12 +43,19 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
     return `${Math.floor(h / 24)}d`;
   }
 
+  // Funkcja nawigująca do szczegółów
+  const goToDetail = () => {
+    if (!isDetailView) {
+      navigate(`/posts/${post._id}`);
+    }
+  };
+
   async function handleLike() {
     try { await api(`/api/posts/${post._id}/like`, { method: 'POST', auth: true }); onUpdate(); } catch (e) {}
   }
 
   async function handleDelete() {
-    if (confirm('Czy usunąć ten zapis z dziennika eksperymentów?')) { 
+    if (confirm('Czy usunąć ten wpis?')) { 
       try { await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); onDelete(post._id); } catch (e) {} 
     }
   }
@@ -64,26 +81,36 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
     } catch (e) {} finally { setBusy(false); }
   }
   
-  async function handleSaveEdit(content, tagsArray, imageFile) {
+  async function handleSaveEdit(content, tagsArray, imageFile, experimentDetails) {
     setBusy(true);
     try {
       const fd = new FormData(); 
       fd.append('content', content); 
       fd.append('tags', JSON.stringify(tagsArray)); 
       if(imageFile) fd.append('image', imageFile);
+
+      if (experimentDetails) {
+         fd.append('experimentDetails', JSON.stringify(experimentDetails));
+      }
       
       const token = localStorage.getItem('token');
-      const res = await fetch(`${getBaseUrl()}/api/posts/${post._id}`, { method: 'PUT', headers: token ? {Authorization:`Bearer ${token}`} : {}, body: fd });
+      const res = await fetch(`${getBaseUrl()}/api/posts/${post._id}`, { 
+        method: 'PUT', 
+        headers: token ? {Authorization:`Bearer ${token}`} : {}, 
+        body: fd 
+      });
+      
       if(!res.ok) throw new Error(); 
       setIsEditing(false); 
       onUpdate(); 
     } catch(e) { alert('Błąd podczas edycji'); } finally { setBusy(false); }
   }
 
-  // ZMIANA: Helper do URL awatara autora
   const authorAvatar = post.author?.avatarUrl 
     ? (post.author.avatarUrl.startsWith('http') ? post.author.avatarUrl : `${getBaseUrl()}${post.author.avatarUrl}`)
     : null;
+
+  const cardClass = `card ${isExperiment ? 'bio-experiment-card' : ''}`;
 
   return (
     <>
@@ -91,6 +118,7 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
         <div className="modal-backdrop" onClick={() => setIsEditing(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{boxShadow:'none'}}>
             <EditPost 
+                post={post}
                 initialContent={post.content} 
                 initialTags={(post.tags||[]).join(',')} 
                 initialImage={post.imageUrl ? (post.imageUrl.startsWith('http')?post.imageUrl:`${getBaseUrl()}${post.imageUrl}`) : null} 
@@ -103,9 +131,8 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
         </div>
       )}
 
-      <div className="card">
+      <div className={cardClass}>
         <div className="post-header">
-          {/* ZMIANA: Wyświetlanie awatara autora */}
           <div 
             className="user-avatar" 
             onClick={() => navigate(`/profile/${post.author?.username}`)}
@@ -139,15 +166,59 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
           </div>
         </div>
 
-        <div style={{color:'var(--text-main)', fontSize:'1rem', whiteSpace:'pre-wrap', lineHeight:'1.6', marginBottom:12}}>
+        {isExperiment && post.experimentDetails && (
+          <div style={{marginBottom: 10}}>
+             <span className="bio-badge">🧪 Eksperyment N=1</span>
+             <div className="experiment-details">
+                <div style={{gridColumn: '1 / -1', borderBottom:'1px solid #e5e7eb', paddingBottom:6, marginBottom:4}}>
+                    <strong>Status:</strong> 
+                    <span style={{marginLeft:6, fontWeight:700, 
+                        color: post.experimentDetails.status === 'completed' ? '#059669' : 
+                               post.experimentDetails.status === 'failed' ? '#dc2626' : 
+                               post.experimentDetails.status === 'planned' ? '#2563eb' : '#059669'
+                    }}>
+                        {post.experimentDetails.status === 'active' && '🟢 W trakcie'}
+                        {post.experimentDetails.status === 'completed' && '🏁 Zakończony'}
+                        {post.experimentDetails.status === 'failed' && '❌ Przerwany'}
+                        {post.experimentDetails.status === 'planned' && '📅 Planowany'}
+                    </span>
+                </div>
+
+                <div><strong>Protokół</strong> {post.experimentDetails.title || '-'}</div>
+                <div><strong>Cel</strong> {post.experimentDetails.goal || '-'}</div>
+                <div style={{gridColumn: '1 / -1'}}><strong>Czas</strong> {post.experimentDetails.duration || '-'}</div>
+             </div>
+          </div>
+        )}
+
+        {/* TREŚĆ POSTA - TERAZ KLIKALNA */}
+        <div 
+            onClick={goToDetail}
+            style={{
+                color:'var(--text-main)', 
+                fontSize:'1rem', 
+                whiteSpace:'pre-wrap', 
+                lineHeight:'1.6', 
+                marginBottom:12,
+                cursor: isDetailView ? 'default' : 'pointer' // Kursor łapki, jeśli to nie widok szczegółowy
+            }}
+        >
             {post.content}
         </div>
 
+        {/* ZDJĘCIE - TERAZ KLIKALNE */}
         {post.imageUrl && (
             <img 
             src={post.imageUrl.startsWith('http') ? post.imageUrl : `${getBaseUrl()}${post.imageUrl}`} 
             alt="post" 
-            style={{width:'100%', borderRadius:8, marginBottom:12, border:'1px solid var(--border)'}}
+            onClick={goToDetail}
+            style={{
+                width:'100%', 
+                borderRadius:8, 
+                marginBottom:12, 
+                border:'1px solid var(--border)',
+                cursor: isDetailView ? 'default' : 'pointer'
+            }}
             />
         )}
 
