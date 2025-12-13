@@ -1,30 +1,58 @@
 const mongoose = require('mongoose');
 
-// Schemat komentarza zagnieżdżonego
-const commentSchema = new mongoose.Schema({
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  text: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const postSchema = new mongoose.Schema(
-  {
-    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    content: { type: String, required: true },
-    tags: { type: [String], default: [] },
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Tablica ID userów
-    
-    // Zagnieżdżona tablica komentarzy
-    comments: [commentSchema], 
-    
-    imageUrl: { type: String, default: null },
-    imageMeta: {
-      width: Number,
-      height: Number,
-      size: Number
-    }
+const PostSchema = new mongoose.Schema({
+  author: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
   },
-  { timestamps: true }
-);
+  content: { 
+    type: String, 
+    required: true 
+  },
+  tags: [String],
+  
+  // Obsługa obrazków
+  imageUrl: String,
+  imageMeta: {
+    width: Number,
+    height: Number,
+    size: Number
+  },
 
-module.exports = mongoose.model('Post', postSchema);
+  // System polubień
+  likes: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }],
+
+  // System komentarzy
+  comments: [{
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    text: String,
+    createdAt: { type: Date, default: Date.now }
+  }],
+
+  // --- BIOHACKING: Nowe pola dla eksperymentów ---
+  type: { 
+    type: String, 
+    enum: ['normal', 'experiment'], // Rozróżniamy zwykły post od eksperymentu
+    default: 'normal' 
+  },
+  
+  experimentDetails: {
+    title: String,      // np. "Protokół Wim Hofa - Tydzień 1"
+    goal: String,       // np. "Zwiększenie odporności na zimno"
+    duration: String,   // np. "30 dni"
+    status: {           // Status widoczny na zielonej ramce
+      type: String, 
+      enum: ['planned', 'active', 'completed', 'failed'],
+      default: 'active'
+    },
+    results: String     // Miejsce na podsumowanie wyników
+  }
+  // ----------------------------------------------
+
+}, { timestamps: true });
+
+module.exports = mongoose.model('Post', PostSchema);

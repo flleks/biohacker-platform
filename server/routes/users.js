@@ -9,24 +9,40 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Konfiguracja Multer (zapisywanie plików)
+// Konfiguracja Multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadPath = 'uploads/';
-    // Upewnij się, że katalog istnieje
     if (!fs.existsSync(uploadPath)){
         fs.mkdirSync(uploadPath);
     }
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    // Unikalna nazwa pliku: timestamp + losowa liczba + rozszerzenie
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
     cb(null, 'avatar-' + uniqueSuffix + ext);
   }
 });
 const upload = multer({ storage: storage });
+
+// Helper do bezpiecznego usuwania plików z serwera
+const removeFile = (fileUrl) => {
+  if (!fileUrl) return;
+  try {
+    // Zakładamy, że fileUrl to np. "/uploads/nazwa.jpg"
+    const fileName = path.basename(fileUrl);
+    // Ścieżka fizyczna na serwerze
+    const filePath = path.join(__dirname, '..', 'uploads', fileName);
+    
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`Usunięto plik: ${filePath}`);
+    }
+  } catch (err) {
+    console.warn(`Nie udało się usunąć pliku ${fileUrl}:`, err.message);
+  }
+};
 
 // GET /api/users/:username/posts
 router.get('/:username/posts', async (req, res) => {
@@ -36,29 +52,28 @@ router.get('/:username/posts', async (req, res) => {
 
     const posts = await Post.find({ author: user._id })
       .sort({ createdAt: -1 })
-      .populate('author', 'username email avatarUrl'); // Dodano avatarUrl do populate
+      .populate('author', 'username email avatarUrl');
       
     return res.json({ posts });
   } catch (err) {
-    console.error('GET /api/users/:username/posts', err);
+    console.error(err);
     return res.status(500).json({ message: 'Błąd serwera', error: err.message });
   }
 });
 
-// GET /api/users/:username (publiczny profil)
+// GET /api/users/:username
 router.get('/:username', async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username }).select('-passwordHash');
     if (!user) return res.status(404).json({ message: 'Nie znaleziono użytkownika' });
     return res.json({ user });
   } catch (err) {
-    console.error('GET /api/users/:username', err);
+    console.error(err);
     return res.status(500).json({ message: 'Błąd serwera', error: err.message });
   }
 });
 
-// PUT /api/users/:id (edycja profilu + AVATAR)
-// Dodano middleware: upload.single('avatar')
+// PUT /api/users/:id (edycja profilu + usuwanie starego awatara)
 router.put('/:id', auth, upload.single('avatar'), async (req, res) => {
   try {
     const uid = req.user._id.toString(); 
@@ -66,47 +81,53 @@ router.put('/:id', auth, upload.single('avatar'), async (req, res) => {
       return res.status(403).json({ message: 'Brak uprawnień do edycji tego profilu' });
     }
 
-    const { username, email, bio } = req.body;
-    const update = {};
+    // Najpierw pobieramy użytkownika, by mieć dostęp do starego avatarUrl
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Użytkownik nie istnieje' });
 
-    // WALIDACJA
-    if (username && typeof username === 'string') { // Poprawka na check typu
-      if (username.trim().length < 3) {
-        return res.status(400).json({ message: 'Nazwa użytkownika jest za krótka' });
-      }
-      update.username = username.trim();
+    const { username, email, bio } = req.body;
+
+    if (username && typeof username === 'string') {
+      if (username.trim().length < 3) return res.status(400).json({ message: 'Nazwa użytkownika za krótka' });
+      user.username = username.trim();
     }
 
     if (email && typeof email === 'string') {
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: 'Nieprawidłowy format email' });
-      }
-      update.email = email.trim().toLowerCase();
+      if (!emailRegex.test(email)) return res.status(400).json({ message: 'Błędny email' });
+      user.email = email.trim().toLowerCase();
     }
 
     if (typeof bio !== 'undefined') {
-      update.bio = bio.trim();
+      user.bio = bio.trim();
     }
 
-    // Obsługa pliku awatara
+    // Jeśli przesłano nowy plik
     if (req.file) {
-      // Zapisujemy ścieżkę dostępu. Zakładamy, że serwer serwuje statycznie folder uploads
-      update.avatarUrl = '/uploads/' + req.file.filename;
+      // 1. Usuń stary awatar z dysku, jeśli istniał
+      if (user.avatarUrl) {
+        removeFile(user.avatarUrl);
+      }
+      // 2. Ustaw nowy
+      user.avatarUrl = '/uploads/' + req.file.filename;
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-passwordHash');
+    await user.save();
     
-    return res.json({ user });
+    // Zwracamy obiekt bez hasła
+    const userResponse = user.toObject();
+    delete userResponse.passwordHash;
+
+    return res.json({ user: userResponse });
   } catch (err) {
     console.error('PUT /api/users/:id', err);
     if (err.code === 11000) {
-      return res.status(409).json({ message: 'Taka nazwa użytkownika lub email jest już zajęty' });
+      return res.status(409).json({ message: 'Nazwa lub email zajęte' });
     }
     return res.status(500).json({ message: 'Błąd serwera', error: err.message });
   }
 });
 
-// DELETE /api/users/:id (trwałe usunięcie konta)
+// DELETE /api/users/:id (trwałe usunięcie konta + czyszczenie plików)
 router.delete('/:id', auth, async (req, res) => {
   try {
     const uid = req.user._id.toString();
@@ -115,15 +136,32 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Brak uprawnień do usunięcia tego konta' });
     }
 
+    // 1. Pobierz posty użytkownika, aby usunąć ich zdjęcia
+    const userPosts = await Post.find({ author: uid });
+    for (const post of userPosts) {
+      if (post.imageUrl) {
+        removeFile(post.imageUrl); // Usuń plik zdjęcia posta
+      }
+    }
+    // Usuń posty z bazy
     await Post.deleteMany({ author: uid });
+
+    // 2. Usuń lajki
     await Post.updateMany({ likes: uid }, { $pull: { likes: uid } });
     
-    const deletedUser = await User.findByIdAndDelete(uid);
-    if (!deletedUser) {
-      return res.status(404).json({ message: 'Użytkownik nie istnieje' });
+    // 3. Pobierz użytkownika, aby usunąć jego awatar
+    const userToDelete = await User.findById(uid);
+    if (userToDelete) {
+        if (userToDelete.avatarUrl) {
+            removeFile(userToDelete.avatarUrl); // Usuń plik awatara
+        }
+        // Usuń użytkownika z bazy
+        await User.deleteOne({ _id: uid });
+    } else {
+        return res.status(404).json({ message: 'Użytkownik nie istnieje' });
     }
 
-    return res.json({ message: 'Procedura zakończona. Konto usunięte z bazy danych.' });
+    return res.json({ message: 'Konto oraz wszystkie powiązane pliki zostały usunięte.' });
   } catch (err) {
     console.error('DELETE /api/users/:id', err);
     return res.status(500).json({ message: 'Błąd serwera', error: err.message });
