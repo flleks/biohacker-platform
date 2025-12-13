@@ -38,7 +38,13 @@ export default function PostCard({ post, currentUser, onUpdate, onDelete }) {
   }
 
   async function handleDelete() {
-    if (confirm('Usunąć wpis?')) { try { await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); onDelete(post._id); } catch (e) {} }
+    // ZMIANA: Nowy komunikat w stylu Biohacker zamiast prostego "Usunąć wpis?"
+    if (confirm('Czy usunąć ten zapis z dziennika eksperymentów?')) { 
+      try { 
+        await api(`/api/posts/${post._id}`, { method: 'DELETE', auth: true }); 
+        onDelete(post._id); 
+      } catch (e) {} 
+    }
   }
 
   async function toggleComments() {
