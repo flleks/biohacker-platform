@@ -31,7 +31,7 @@ const upload = multer({
   }
 });
 
-// --- POMOCNICZE FUNKCJE ---
+// --- FUNKCJE POMOCNICZE ---
 const parseTags = (input) => {
   if (!input) return [];
   if (Array.isArray(input)) return input;
@@ -74,33 +74,59 @@ const deleteFile = (url) => {
 
 // --- ROUTING ---
 
-// 1. LISTA POSTÓW
+// 1. LISTA POSTÓW (Z POPRAWKĄ DLA STARYCH DANYCH)
 router.get('/', async (req, res) => {
   try {
     const filter = {};
+    
+    // Filtrowanie po autorze
     if (req.query.author && /^[0-9a-fA-F]{24}$/.test(req.query.author)) {
       filter.author = req.query.author;
     }
+
+    // Filtrowanie po typie
+    if (req.query.type) {
+        if (req.query.type === 'experiment') {
+            // Eksperymenty muszą mieć jawnie ustawiony typ
+            filter.type = 'experiment';
+        } else if (req.query.type === 'normal') {
+            // POPRAWKA: "Normalne" to te z type='normal' ORAZ te bez typu (stare)
+            filter.$or = [
+                { type: 'normal' },
+                { type: { $exists: false } }, // Brak pola type
+                { type: null }                // Pole type jest null
+            ];
+        }
+    }
+
+    // Sortowanie
+    let sortOption = { createdAt: -1 }; // Domyślnie: najnowsze
+    if (req.query.sort === 'popular') {
+        sortOption = { views: -1, createdAt: -1 }; // Najpierw views, potem data
+    } else if (req.query.sort === 'oldest') {
+        sortOption = { createdAt: 1 };
+    }
+
     const posts = await Post.find(filter)
-      .sort({ createdAt: -1 })
+      .sort(sortOption)
       .populate('author', 'username email avatarUrl');
+      
     res.json({ posts });
   } catch (err) {
     res.status(500).json({ message: 'Błąd serwera', error: err.message });
   }
 });
 
-// 2. POJEDYNCZY POST (ZINKREMENTUJ VIEWS)
+// 2. POJEDYNCZY POST
 router.get('/:id', async (req, res) => {
   try {
-    // Używamy findByIdAndUpdate z $inc, aby zwiększyć licznik atomowo
     const post = await Post.findByIdAndUpdate(
       req.params.id,
-      { $inc: { views: 1 } }, // Zwiększ views o 1
-      { new: true } // Zwróć zaktualizowany dokument
+      { $inc: { views: 1 } },
+      { new: true }
     )
     .populate('author', 'username email avatarUrl')
-    .populate('comments.author', 'username avatarUrl'); // Przy okazji pobierz dane autorów komentarzy
+    .populate('comments.author', 'username avatarUrl');
     
     if (!post) return res.status(404).json({ message: 'Post nie znaleziony' });
     res.json({ post });
@@ -109,7 +135,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. TWORZENIE POSTA
+// 3. TWORZENIE
 router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
     const content = (req.body.content || '').trim();
@@ -128,7 +154,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       imageMeta,
       type,
       experimentDetails,
-      views: 0 // Startujemy od zera
+      views: 0
     });
     
     post = await Post.findById(post._id).populate('author', 'username email avatarUrl');
@@ -138,7 +164,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
   }
 });
 
-// 4. EDYCJA POSTA
+// 4. EDYCJA
 router.put('/:id', auth, upload.single('image'), async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);

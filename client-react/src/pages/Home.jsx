@@ -1,15 +1,34 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, getBaseUrl, getToken } from '../api';
 import PostCard from '../components/PostCard';
 
 export default function Home({ me }) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [posts, setPosts] = useState([]);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
+
+  const filterType = searchParams.get('type') || 'all';
+  const sortOrder = searchParams.get('sort') || 'newest';
+
+  const handleFilterChange = (newType) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (newType === 'all') newParams.delete('type');
+    else newParams.set('type', newType);
+    setSearchParams(newParams);
+  };
+
+  const handleSortChange = (newSort) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (newSort === 'newest') newParams.delete('sort');
+    else newParams.set('sort', newSort);
+    setSearchParams(newParams);
+  };
 
   // --- STANY FORMULARZA ---
   const [postContent, setPostContent] = useState('');
@@ -17,24 +36,32 @@ export default function Home({ me }) {
   const [postImageFile, setPostImageFile] = useState(null);
   const [postImagePreview, setPostImagePreview] = useState(null);
 
-  // --- NOWE STANY: EKSPERYMENT ---
+  // --- STANY NOWEGO EKSPERYMENTU ---
   const [postType, setPostType] = useState('normal'); 
   const [expTitle, setExpTitle] = useState('');
   const [expGoal, setExpGoal] = useState('');
   const [expDuration, setExpDuration] = useState('');
-  const [expStatus, setExpStatus] = useState('active'); // Domyślny status
-  // ------------------------------
+  const [expStatus, setExpStatus] = useState('active'); 
 
   const BASIC_TAGS = ['sleep','supplements','fitness','nootropics','diet'];
 
-  useEffect(() => { loadPosts(); }, []);
+  useEffect(() => { 
+      loadPosts(); 
+  }, [filterType, sortOrder]);
 
   useEffect(() => {
     setVisibleCount(10);
-  }, [search]);
+  }, [search, filterType, sortOrder]);
 
   async function loadPosts() {
-    try { const out = await api('/api/posts'); setPosts(out.posts || []); } catch (e) { console.error(e); }
+    try { 
+        const params = new URLSearchParams();
+        if (filterType !== 'all') params.append('type', filterType);
+        if (sortOrder !== 'newest') params.append('sort', sortOrder);
+        
+        const out = await api(`/api/posts?${params.toString()}`); 
+        setPosts(out.posts || []); 
+    } catch (e) { console.error(e); }
   }
 
   const handlePostUpdate = () => loadPosts();
@@ -60,14 +87,13 @@ export default function Home({ me }) {
       fd.append('tags', JSON.stringify(tags));
       if (postImageFile) fd.append('image', postImageFile);
 
-      // --- WYSYŁANIE DANYCH EKSPERYMENTU ---
       fd.append('type', postType);
       if (postType === 'experiment') {
         const details = {
             title: expTitle,
             goal: expGoal,
             duration: expDuration,
-            status: expStatus // Wysyłamy wybrany status
+            status: expStatus 
         };
         fd.append('experimentDetails', JSON.stringify(details));
       }
@@ -75,19 +101,17 @@ export default function Home({ me }) {
       const token = getToken();
       await fetch(`${getBaseUrl()}/api/posts`, { method: 'POST', headers: token ? {Authorization:`Bearer ${token}`} : {}, body: fd });
       
-      // RESET FORMULARZA
       setPostContent(''); setPostTags(''); 
       if (postImagePreview) URL.revokeObjectURL(postImagePreview);
       setPostImageFile(null); setPostImagePreview(null);
-      
       setPostType('normal');
       setExpTitle('');
       setExpGoal('');
       setExpDuration('');
       setExpStatus('active');
-
       setComposerOpen(false);
       
+      setSearchParams({}); 
       await loadPosts();
     } catch (e) { alert('Błąd: ' + e.message); } 
     finally { setBusy(false); }
@@ -99,7 +123,8 @@ export default function Home({ me }) {
     return posts.filter(p => {
       const contentMatch = (p.content || '').toLowerCase().includes(q);
       const tagsMatch = (p.tags || []).some(t => t.toLowerCase().includes(q));
-      return contentMatch || tagsMatch;
+      const authorMatch = (p.author?.username || '').toLowerCase().includes(q);
+      return contentMatch || tagsMatch || authorMatch;
     });
   }, [posts, search]);
 
@@ -118,6 +143,18 @@ export default function Home({ me }) {
     ? (me.avatarUrl.startsWith('http') ? me.avatarUrl : `${getBaseUrl()}${me.avatarUrl}`)
     : null;
 
+  const getBtnStyle = (isActive) => ({
+    padding: '6px 12px',
+    borderRadius: 20,
+    fontSize: '0.85rem',
+    border: isActive ? 'none' : '1px solid var(--border)',
+    background: isActive ? 'var(--accent)' : 'var(--bg-input)',
+    color: isActive ? '#000' : 'var(--text-main)',
+    cursor: 'pointer',
+    fontWeight: 500,
+    transition: 'all 0.2s'
+  });
+
   return (
     <div className="container">
       <div className="layout">
@@ -132,7 +169,7 @@ export default function Home({ me }) {
                     className="search-input-styled" 
                     value={search} 
                     onChange={e=>setSearch(e.target.value)} 
-                    placeholder="Wpisz frazę lub #tag..." 
+                    placeholder="Wpisz frazę, #tag lub użytkownika..." 
                   />
                 </div>
                 {search && (
@@ -156,38 +193,80 @@ export default function Home({ me }) {
               </div>
             )}
 
-           <section className="box" style={{paddingBottom: 15}}> 
-              <h3 className="box-title" style={{marginBottom: 15}}>Posty</h3>
-              <div className="post-list">
-                {visiblePosts.map(p => (
-                  <div key={p._id}>
-                     <PostCard post={p} currentUser={me} onUpdate={handlePostUpdate} onDelete={handlePostDelete} />
-                  </div>
-                ))}
-                
-                {filteredPosts.length === 0 && (
-                  <div className="text-center" style={{padding:20}}>
-                      <div style={{fontSize:'2rem', marginBottom:10}}>🧪</div>
-                      <h3 className="muted">Brak wyników</h3>
-                  </div>
-                )}
+           {/* --- GŁÓWNY KONTENER POSTÓW --- */}
+           <section className="box" style={{ padding: 0, overflow: 'hidden' }}>
+               
+               {/* GÓRA: NAGŁÓWEK I FILTRY */}
+               <div style={{ padding: '15px' }}>
+                   <h3 className="box-title" style={{marginBottom: 10}}>Wpisy</h3>
 
-                {visibleCount < filteredPosts.length && (
-                  <button 
-                    onClick={() => setVisibleCount(prev => prev + 10)}
-                    style={{
-                      width: '100%', padding: '12px 0', marginTop: 5,
-                      background: 'var(--bg-input)', border: '1px solid var(--border)',
-                      borderRadius: 8, color: 'var(--text-main)', fontWeight: 600,
-                      cursor: 'pointer', transition: 'background 0.2s'
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                    onMouseOut={e => e.currentTarget.style.background = 'var(--bg-input)'}
-                  >
-                    ⬇ Pokaż więcej ({filteredPosts.length - visibleCount})
-                  </button>
-                )}
-              </div>
+                   <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+                       <div style={{display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap'}}>
+                           <span style={{fontSize:'0.8rem', color:'var(--text-muted)', fontWeight: 600, minWidth: 50}}>POKAŻ:</span>
+                           <button onClick={()=>handleFilterChange('all')} style={getBtnStyle(filterType==='all')}>
+                               Wszystkie
+                           </button>
+                           <button onClick={()=>handleFilterChange('experiment')} style={getBtnStyle(filterType==='experiment')}>
+                               🧪 Eksperymenty
+                           </button>
+                           <button onClick={()=>handleFilterChange('normal')} style={getBtnStyle(filterType==='normal')}>
+                               📝 Wpisy
+                           </button>
+                       </div>
+
+                       {/* LINIA 1 (WEWNĄTRZ) */}
+                       <div style={{height: 1, background: 'var(--border)', width: '100%', opacity: 0.5}}></div>
+
+                       <div style={{display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap'}}>
+                           <span style={{fontSize:'0.8rem', color:'var(--text-muted)', fontWeight: 600, minWidth: 50}}>SORTUJ:</span>
+                           <button onClick={()=>handleSortChange('newest')} style={getBtnStyle(sortOrder==='newest')}>
+                               🆕 Najnowsze
+                           </button>
+                           <button onClick={()=>handleSortChange('popular')} style={getBtnStyle(sortOrder==='popular')}>
+                               🔥 Popularne
+                           </button>
+                       </div>
+                   </div>
+               </div>
+
+               {/* LINIA 2 (ODDZIELAJĄCA) - Z MARGINESAMI */}
+               {/* Zmieniono width: 100% na margin: '0 15px', aby pasowała do linii powyżej */}
+               <div style={{height: 1, background: 'var(--border)', margin: '0 15px', opacity: 0.5}}></div>
+
+               {/* DÓŁ: LISTA POSTÓW */}
+               <div className="post-list" style={{ padding: '0 15px 15px 15px', paddingTop: 15 }}>
+                  {visiblePosts.map(p => (
+                    <div key={p._id}>
+                       <PostCard post={p} currentUser={me} onUpdate={handlePostUpdate} onDelete={handlePostDelete} />
+                    </div>
+                  ))}
+                  
+                  {filteredPosts.length === 0 && (
+                    <div className="text-center" style={{padding:30}}>
+                        <div style={{fontSize:'2.5rem', marginBottom:10}}>🔍</div>
+                        <h3 className="muted">Brak wpisów dla wybranych filtrów</h3>
+                        <button className="btn-secondary" style={{marginTop: 10}} onClick={() => setSearchParams({})}>
+                            Wyczyść filtry
+                        </button>
+                    </div>
+                  )}
+
+                  {visibleCount < filteredPosts.length && (
+                    <button 
+                      onClick={() => setVisibleCount(prev => prev + 10)}
+                      style={{
+                        width: '100%', padding: '12px 0', marginTop: 5,
+                        background: 'var(--bg-input)', border: '1px solid var(--border)',
+                        borderRadius: 8, color: 'var(--text-main)', fontWeight: 600,
+                        cursor: 'pointer', transition: 'background 0.2s'
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'var(--bg-input)'}
+                    >
+                      ⬇ Pokaż więcej ({filteredPosts.length - visibleCount})
+                    </button>
+                  )}
+               </div>
            </section>
         </div>
 
@@ -230,7 +309,6 @@ export default function Home({ me }) {
           </div>
         </aside>
 
-        {/* MODAL DODAWANIA POSTA */}
         {composerOpen && (
              <div className="modal-backdrop" onClick={()=>setComposerOpen(false)}>
                <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -247,7 +325,6 @@ export default function Home({ me }) {
 
                   {postType === 'experiment' && (
                     <div className="experiment-inputs">
-                        {/* WYBÓR STATUSU */}
                         <select 
                             value={expStatus}
                             onChange={e => setExpStatus(e.target.value)}
